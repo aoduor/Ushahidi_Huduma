@@ -102,6 +102,7 @@ class Opendata_Controller extends Main_Controller {
 		
 		// Display the data
 		$categories = $this->_get_categories();
+		$categories[0] = "---".Kohana::lang('ui_huduma.select_category')."---";
 		ksort($categories);
 		
 		$this->template->content->basemap_title = Kohana::lang('opendata.basemap').": ".Kohana::lang('opendata.basemap_options.1');
@@ -263,17 +264,16 @@ class Opendata_Controller extends Main_Controller {
 		));
 	}
 	
-	public function _get_categories()
+	public function _get_categories($parent_only = TRUE)
 	{
-		$categories = Category_Model::get_categories();
-		$categories_select = array('' => "---".Kohana::lang('ui_huduma.select_category')."---");
-		
-		foreach ($categories as $category)
-		{
-			$categories_select[$category->id.",".$category->category_title] = $category;
-		}
+		return ($parent_only)
+		? ORM::factory('category')
+				->where(array('parent_id' => 0, 'category_visible' => 1, 'category_title !=' => 'Trusted Reports'))
+				->select_list('id', 'category_title')
+		: ORM::factory('category')
+				->where(array('category_visible' => 1, 'category_title !=' => 'Trusted Reports'))
+				->select_list('id', 'category_title');
 
-		return $categories_select;
 	}
 }
 ?>
