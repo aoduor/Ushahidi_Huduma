@@ -7,12 +7,15 @@
  * @copyright Ushahidi Inc - http://ushahidi.com
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
  */
-class Opendata_Controller extends Frontend_Controller {
+class Opendata_Controller extends Main_Controller {
 	
 	public function index()
 	{
 		// Content view
 		$this->template->content = new View('huduma/opendata');
+		
+		// DB Connection
+		$this->db = new Database;
 		
 		// To hold the county data
 		$county_data = array();
@@ -98,8 +101,7 @@ class Opendata_Controller extends Frontend_Controller {
 		$interval = (int) $total/$chloropleth_divisor;
 		
 		// Display the data
-		$categories = Category_Model::get_dropdown_categories();
-		$categories[0] = "---".Kohana::lang('ui_huduma.select_category')."---";
+		$categories = $this->_get_categories();
 		ksort($categories);
 		
 		$this->template->content->basemap_title = Kohana::lang('opendata.basemap').": ".Kohana::lang('opendata.basemap_options.1');
@@ -259,6 +261,19 @@ class Opendata_Controller extends Frontend_Controller {
 			'success' => TRUE,
 			'points' => $points
 		));
+	}
+	
+	public function _get_categories()
+	{
+		$categories = Category_Model::get_categories();
+		$categories_select = array('' => "---".Kohana::lang('ui_huduma.select_category')."---");
+		
+		foreach ($categories as $category)
+		{
+			$categories_select[$category->id.",".$category->category_title] = $category;
+		}
+
+		return $categories_select;
 	}
 }
 ?>
