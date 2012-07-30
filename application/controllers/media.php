@@ -15,7 +15,7 @@
  * http://www.gnu.org/copyleft/lesser.html
  * @author     Ushahidi Team <team@ushahidi.com>
  * @package    Ushahidi - http://source.ushahididev.com
- * @module     Media Controller
+ * @subpackage Controllers
  * @copyright  Ushahidi - http://www.ushahidi.com
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
 */
@@ -87,7 +87,10 @@ class Media_Controller extends Controller {
         header('Content-type: '.$mime);
         header('Cache-Control: must-revalidate');
         header('Expires: '.gmdate("D, d M Y H:i:s", time() + $expiry_time).' GMT');
-        header('ETag: '.$mtime);
+        if (isset($mtime))
+        {
+          header('ETag: '.$mtime);
+        }
         header("Last-Modified: ".gmdate("D, d M Y H:i:s", $mtime)." GMT");
 
         $oldetag = isset($_SERVER['HTTP_IF_NONE_MATCH'])?trim($_SERVER['HTTP_IF_NONE_MATCH']):'';
@@ -96,7 +99,7 @@ class Media_Controller extends Controller {
 
         if (($oldmtime AND strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) == $oldmtime) OR $oldetag == $mtime)
         {
-            header('HTTP/1.1 304 Not Modified');
+            header($_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified');
         }
         else
         {

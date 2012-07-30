@@ -8,124 +8,132 @@
  * http://www.gnu.org/copyleft/lesser.html
  * @author     Ushahidi Team <team@ushahidi.com> 
  * @package    Ushahidi - http://source.ushahididev.com
- * @module     Admin Users Controller  
+ * @subpackage Admin
  * @copyright  Ushahidi - http://www.ushahidi.com
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL) 
  */
 
-class Stats_Controller extends Admin_Controller
-{
-    function __construct()
-    {
-        parent::__construct();
-        $this->template->this_page = 'stats';
-        
-        // If user doesn't have access, redirect to dashboard
-        if ( ! admin::permissions($this->user, "stats"))
-        {
-            url::redirect(url::site().'admin/dashboard');
-        }
-    }
-    
-    function index()
-    {   
-        $this->template->content = new View('admin/stats_hits');
-        $this->template->content->title = Kohana::lang('ui_admin.statistics');
-        
-        // Retrieve Current Settings
-        $settings = ORM::factory('settings', 1);
-        
-        if($settings->stat_id === null || $settings->stat_id == 0)
-        {
-            $sitename = $settings->site_name;
-            $url = url::base();
-            $this->template->content->stat_id = Stats_Model::create_site( $sitename, $url );
-        }
-        
-        // Show the hits page since stats are already set up
-        $this->hits();
-        
-    }
-    
-    function reports()
-    {
-        $this->template->content = new View('admin/stats_reports');
-        $this->template->content->title = Kohana::lang('ui_admin.statistics');
-        
-        // Javascript Header
-        $this->template->protochart_enabled = TRUE;
-        $this->template->js = new View('admin/stats_js');
-        
-        $this->template->content->failure = '';
-        
-        // Set the date range (how many days in the past from today?)        
-        $range = (isset($_GET['range']))
-            ? $_GET['range']
-            : 10000; // Get all reports so go back far into the past
-            
-        $this->template->content->range = $range;
-        
-        // Get an arbitrary date range
-        $dp1 = (isset($_GET['dp1'])) ? $_GET['dp1'] : null;
-        $dp2 = (isset($_GET['dp2'])) ? $_GET['dp2'] : null;
-        
-        // Report Data
-        $data = Stats_Model::get_report_stats(false,false,$range,$dp1,$dp2);
-        
-        $reports_chart = new protochart;
-        
-        // This makes the chart a delicious pie chart
-        $options = array(
-            'pies'=>array('show'=>'true')
-            );
-        
-        // Grab category data
-        $cats = Category_Model::categories();
-        
-        $this->template->content->category_data = $cats;
+class Stats_Controller extends Admin_Controller {
 
-        $report_data = array();
-        $colors = array();
-        $reports_per_cat = array();
-        foreach ($data['category_counts'] as $category_id => $count)
-        {
-            // Verify if the array key $category_id exists before attempting to fetch
-            if (array_key_exists($category_id, $cats))
-            {
-                $category_name = $cats[$category_id]['category_title'];
-                $report_data[$category_name] = $count;
+	public function __construct()
+	{
+		parent::__construct();
+		$this->template->this_page = 'stats';
+
+		// If user doesn't have access, redirect to dashboard
+		if ( ! $this->auth->has_permission("stats"))
+		{
+			url::redirect(url::site().'admin/dashboard');
+		}
+    }
+
+	public function index()
+	{   
+		$this->template->content = new View('admin/stats/hits');
+		$this->template->content->title = Kohana::lang('ui_admin.statistics');
+
+		// Retrieve Current Settings
+		$stat_id = Settings_Model::get_setting('stat_id');
+
+		if ($stat_id === NULL OR $stat_id == 0)
+		{
+			$sitename = Settings_Model::get_setting('site_name');
+			$url = url::base();
+			$this->template->content->stat_id = Stats_Model::create_site( $sitename, $url );
+		}
+
+		// Show the hits page since stats are already set up
+		$this->hits();
+	}
+	
+	/**
+	 * Report statistics
+	 */
+	public function reports()
+	{
+		$this->template->content = new View('admin/stats/reports');
+		$this->template->content->title = Kohana::lang('ui_admin.statistics');
+
+		// Javascript Header
+		$this->template->protochart_enabled = TRUE;
+		$this->template->js = new View('admin/stats/stats_js');
+
+		$this->template->content->failure = '';
+
+		// Set the date range (how many days in the past from today?)
+		$range = 10000;
+		if (isset($_GET['range']))
+		{
+			$range = $this->input->xss_clean($_GET['range']);
+			$range = (intval($range) > 0)? intval($range) : 10000;
+		}
+
+		$this->template->content->range = $range;
+      
+		// Get an arbitrary date range
+		$dp1 = (isset($_GET['dp1'])) ? $_GET['dp1'] : null;
+		$dp2 = (isset($_GET['dp2'])) ? $_GET['dp2'] : null;
+
+		// Report Data
+		$data = Stats_Model::get_report_stats(false,false,$range,$dp1,$dp2);
+
+		$reports_chart = new protochart;
+
+		// This makes the chart a delicious pie chart
+		$options = array(
+			'pies'=>array('show'=>'true')
+		);
+
+		// Grab category data
+		$cats = Category_Model::categories();
+
+		$this->template->content->category_data = $cats;
+
+		$report_data = array();
+		$colors = array();
+		$reports_per_cat = array();
+		
+		foreach ($data['category_counts'] as $category_id => $count)
+		{
+			// Verify if the array key $category_id exists before attempting to fetch
+			if (array_key_exists($category_id, $cats))
+			{
+				$category_name = $cats[$category_id]['category_title'];
+				$report_data[$category_name] = $count;
             
-                $colors[$category_name] = (isset($cats[$category_id]['category_color']))
-                    ? $cats[$category_id]['category_color']
-                    : 'FFFFFF';
-            
-                foreach($count as $c)
-                {             
-                    // Count up the total number of reports per category
-                    if( ! isset($reports_per_cat[$category_id]))
-                    {
+				$colors[$category_name] = (isset($cats[$category_id]['category_color']))
+					? $cats[$category_id]['category_color']
+					: 'FFFFFF';
+
+				foreach ($count as $c)
+				{             
+					// Count up the total number of reports per category
+					if ( ! isset($reports_per_cat[$category_id]))
+					{
                         $reports_per_cat[$category_id] = 0;
                     }
-                
-                    $reports_per_cat[$category_id] += $c;
-                }
-            }
-        }
+
+					$reports_per_cat[$category_id] += $c;
+				}
+			}
+		}
+		asort($reports_per_cat, SORT_NUMERIC);
+		$reports_per_cat = array_reverse($reports_per_cat, TRUE);
+		
+		$this->template->content->num_categories = $data['total_categories'];
+		$this->template->content->reports_per_cat = $reports_per_cat;
+
+		$this->template->content->reports_chart = $reports_chart->chart('reports',$report_data,$options,$colors,350,350);
+
+		$this->template->content->verified = 0;
+		$this->template->content->unverified = 0;
+		$this->template->content->approved = 0;
+		$this->template->content->unapproved = 0;
+
+		$report_status_chart = new protochart;
+		$report_staus_data = array();
         
-        $this->template->content->num_categories = $data['total_categories'];
-        $this->template->content->reports_per_cat = $reports_per_cat;
-        
-        $this->template->content->reports_chart = $reports_chart->chart('reports',$report_data,$options,$colors,350,350);
-        
-        $this->template->content->verified = 0;
-        $this->template->content->unverified = 0;
-        $this->template->content->approved = 0;
-        $this->template->content->unapproved = 0;
-        
-        $report_status_chart = new protochart;
-        $report_staus_data = array();
-        
-        foreach($data['verified_counts'] as $ver_or_un => $arr)
+        foreach ($data['verified_counts'] as $ver_or_un => $arr)
         {
             if ( ! isset($report_staus_data[$ver_or_un][0]))
             {
@@ -149,7 +157,8 @@ class Stats_Controller extends Admin_Controller
         
         $report_staus_data = array();
         
-        foreach($data['approved_counts'] as $app_or_un => $arr){
+		foreach ($data['approved_counts'] as $app_or_un => $arr)
+		{
             if ( ! isset($report_staus_data[$app_or_un][0]))
             {
                 $report_staus_data[$app_or_un][0] = 0;
@@ -177,14 +186,14 @@ class Stats_Controller extends Admin_Controller
         $this->template->content->dp2 = date('Y-m-d',$data['latest_report_time']);
     }
     
-    function impact()
+    public function impact()
     {
-        $this->template->content = new View('admin/stats_impact');
+        $this->template->content = new View('admin/stats/impact');
         $this->template->content->title = Kohana::lang('ui_admin.statistics');
         
         // Javascript Header
         $this->template->raphael_enabled = TRUE;
-        $this->template->js = new View('admin/stats_js');
+        $this->template->js = new View('admin/stats/stats_js');
         
         $this->template->content->failure = '';
         
@@ -212,16 +221,15 @@ class Stats_Controller extends Admin_Controller
             return false;
         }
         
-        $json = '';
+        $json = array();
         $use_log = '';
-        $json .= '"buckets":['."\n";
+        $json['buckets'] = array();
         $cat_report_count = array();
         $category_counter = array();
         
         foreach($data['category_counts'] as $timestamp => $count_array)
         {
-            $comma_flag = false;
-            $line = '';
+            $line = array();
             // If this number is greater than 0, we'll show the line
             $display_test = 0;
             foreach($count_array as $category_id => $count)
@@ -231,15 +239,12 @@ class Stats_Controller extends Admin_Controller
                 // We aren't allowing 0s
                 if($count > 0)
                 {
-                    if($comma_flag) $line .= ',';
-                    $comma_flag = true;
-                    
-                    $line .= '['.$category_id.','.$count.']';
+                    $line[] = array($category_id, $count);
                     
                     $display_test += $count;
                     
                     // If we see a count over 50 (picked this arbitrarily), then switch to log format
-                    if($count > 50) $use_log = '"use_log":1,'."\n";
+                    if($count > 50) $use_log = 1;
                     
                     // Count the number of reports so we have something useful to show in the legend
                     if ( ! isset($cat_report_count[$category_id])) $cat_report_count[$category_id] = 0;
@@ -248,19 +253,18 @@ class Stats_Controller extends Admin_Controller
             }
             if ($display_test > 0)
             {
-                $json .= '{"d":'.$timestamp.',"i":[';
-                $json .= $line;
-                $json .= ']},'."\n";
+                $json['buckets'][] = array(
+                  'd' => $timestamp,
+                  'i' => $line
+                );
             }
         }
         
         $this->template->content->num_reports = $data['total_reports'];
         $this->template->content->num_categories = $data['total_categories'];
         
-        $json .= '],'."\n";
-        $json .= $use_log;
-        $json .= '"categories":'."\n";
-        $json .= '{'."\n";
+        $json['use_log'] = $use_log;
+        $json['categories'] = array();
         
         // Grab category data
         $cats = Category_Model::categories();
@@ -273,12 +277,14 @@ class Stats_Controller extends Admin_Controller
                 $report_count = $cat_report_count[$category_id];
             }
             
-            $json .= $category_id.':{"name":"'.$cat_array['category_title'].'","fill":"#'.$cat_array['category_color'].'","reports":'.$report_count.'},'."\n";
+            $json['categories'][$category_id] = array(
+              "name" => $cat_array['category_title'],
+              "fill" => '#'.$cat_array['category_color'],
+              "reports" => $report_count
+            );
         }
         
-        $json .= '}'."\n";
-        
-        $this->template->impact_json = $json;
+        $this->template->impact_json = json_encode($json);
         
         // Set the date
         $this->template->content->dp1 = date('Y-m-d',$data['earliest_report_time']);
@@ -286,14 +292,14 @@ class Stats_Controller extends Admin_Controller
         
     }
     
-    function hits()
+	public function hits()
     {
-        $this->template->content = new View('admin/stats_hits');
+        $this->template->content = new View('admin/stats/hits');
         $this->template->content->title = Kohana::lang('ui_admin.statistics');
         
         // Javascript Header
         $this->template->protochart_enabled = TRUE;
-        $this->template->js = new View('admin/stats_js');
+        $this->template->js = new View('admin/stats/stats_js');
         
         $this->template->content->failure = '';
         
@@ -362,11 +368,11 @@ class Stats_Controller extends Admin_Controller
     
     function country()
     {
-        $this->template->content = new View('admin/stats_country');
+        $this->template->content = new View('admin/stats/country');
         $this->template->content->title = Kohana::lang('ui_admin.statistics');
         
         // Javascript Header
-        $this->template->js = new View('admin/stats_js');
+        $this->template->js = new View('admin/stats/stats_js');
         
         $this->template->content->failure = '';
         
@@ -441,7 +447,7 @@ class Stats_Controller extends Admin_Controller
             $i++;
         }
         
-        $this->template->content->visitor_map = "http://chart.apis.google.com/chart?chs=440x220&chf=bg,s,ffffff&cht=t&chtm=world&chco=cccccc,A07B7B,a20000&chld=".$codes."&chd=t:".$values;
+        $this->template->content->visitor_map = "https://chart.googleapis.com/chart?chs=440x220&chf=bg,s,ffffff&cht=t&chtm=world&chco=cccccc,A07B7B,a20000&chld=".$codes."&chd=t:".$values;
         
         // Hit Data
         $data = Stats_Model::get_hit_stats($range,$dp1,$dp2);
@@ -486,7 +492,7 @@ class Stats_Controller extends Admin_Controller
     
     function punchcard()
 	{
-		$this->template->content = new View('admin/stats_punchcard');
+		$this->template->content = new View('admin/stats/punchcard');
 		$this->template->content->title = Kohana::lang('ui_admin.statistics');
 
 		$incident_dates = Incident_Model::get_incident_dates();
@@ -527,7 +533,7 @@ class Stats_Controller extends Admin_Controller
 				$highest_value = $data[$dow][$hour];
 			}
 		}
-		$this->template->content->chart_url = 'http://chart.apis.google.com/chart?chs=905x300&chds=-1,24,-1,7,0,'.$highest_value.'&chf=bg,s,efefef&chd=t:0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23|0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7|'.implode(',',$data['sun']).','.implode(',',$data['mon']).','.implode(',',$data['tue']).','.implode(',',$data['wed']).','.implode(',',$data['thu']).','.implode(',',$data['fri']).','.implode(',',$data['sat']).',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0&chxt=x,y&chm=o,333333,1,1.0,30.0&chxl=0:||12'.Kohana::lang('datetime.am').'|1|2|3|4|5|6|7|8|9|10|11|12'.Kohana::lang('datetime.pm').'|1|2|3|4|5|6|7|8|9|10|11||1:||'.Kohana::lang('datetime.sunday.abbv').'|'.Kohana::lang('datetime.monday.abbv').'|'.Kohana::lang('datetime.tuesday.abbv').'|'.Kohana::lang('datetime.wednesday.abbv').'|'.Kohana::lang('datetime.thursday.abbv').'|'.Kohana::lang('datetime.friday.abbv').'|'.Kohana::lang('datetime.saturday.abbv').'|&cht=s';
+		$this->template->content->chart_url = 'https://chart.googleapis.com/chart?chs=905x300&chds=-1,24,-1,7,0,'.$highest_value.'&chf=bg,s,efefef&chd=t:0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23|0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7|'.implode(',',$data['sun']).','.implode(',',$data['mon']).','.implode(',',$data['tue']).','.implode(',',$data['wed']).','.implode(',',$data['thu']).','.implode(',',$data['fri']).','.implode(',',$data['sat']).',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0&chxt=x,y&chm=o,333333,1,1.0,30.0&chxl=0:||12'.Kohana::lang('datetime.am').'|1|2|3|4|5|6|7|8|9|10|11|12'.Kohana::lang('datetime.pm').'|1|2|3|4|5|6|7|8|9|10|11||1:||'.Kohana::lang('datetime.sunday.abbv').'|'.Kohana::lang('datetime.monday.abbv').'|'.Kohana::lang('datetime.tuesday.abbv').'|'.Kohana::lang('datetime.wednesday.abbv').'|'.Kohana::lang('datetime.thursday.abbv').'|'.Kohana::lang('datetime.friday.abbv').'|'.Kohana::lang('datetime.saturday.abbv').'|&cht=s';
 
 	}
     
@@ -548,6 +554,7 @@ class Stats_Controller extends Admin_Controller
         curl_setopt($curl_handle,CURLOPT_URL,$url);
         curl_setopt($curl_handle,CURLOPT_CONNECTTIMEOUT,15); // Timeout set to 15 seconds. This is somewhat arbitrary and can be changed.
         curl_setopt($curl_handle,CURLOPT_RETURNTRANSFER,1); //Set curl to store data in variable instead of print
+        curl_setopt($curl_handle,CURLOPT_SSL_VERIFYPEER, false);
         $buffer = curl_exec($curl_handle);
         curl_close($curl_handle);
         

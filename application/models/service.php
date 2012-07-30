@@ -9,7 +9,7 @@
  * http://www.gnu.org/copyleft/lesser.html
  * @author     Ushahidi Team <team@ushahidi.com> 
  * @package    Ushahidi - http://source.ushahididev.com
- * @module     Service Model  
+ * @subpackage Models
  * @copyright  Ushahidi - http://www.ushahidi.com
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL) 
  */
@@ -30,13 +30,12 @@ class Service_Model extends ORM
 		return $this->service_name;
 	}
 	
-	static function get_array() 
+	/**
+	 * Gets the list of services as an array
+	 * @return array
+	 */
+	public static function get_array() 
 	{
-    	$all_services = ORM::factory('service')->find_all();
-    	$service_array = array();
-    	foreach ($all_services as $service) {
-    		$service_array[$service->id] = $service->service_name;
-    	}
-    	return $service_array;
+    	return ORM::factory('service')->select_list('id', 'service_name');
 	}
 }

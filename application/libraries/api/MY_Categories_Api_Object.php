@@ -67,9 +67,10 @@ class Categories_Api_Object extends Api_Object_Core {
     private function _get_categories_by_id($id)
     {
         // Find incidents
-        $this->query = "SELECT id, category_title, category_description, ";
-        $this->query .= "category_color FROM `".$this->table_prefix."category` ";
-        $this->query .= "WHERE category_visible = 1 AND id=$id ORDER BY id DESC";
+        $this->query = "SELECT id, parent_id, category_title, category_description, ";
+        $this->query .= "category_color, category_position, category_image_thumb AS category_icon ";
+        $this->query .= "FROM `".$this->table_prefix."category` ";
+        $this->query .= "WHERE category_visible = 1 AND id=$id ORDER BY category_position ASC";
 
         $items = $this->db->query($this->query);
         
@@ -87,8 +88,11 @@ class Categories_Api_Object extends Api_Object_Core {
             return $this->response(4);
         }
 
+        $url_prefix = url::base().Kohana::config('upload.relative_directory').'/';
         foreach ($items as $item)
         {
+            $item->icon = $item->icon ? $url_prefix . $item->icon : '';
+
             // Needs different treatment depending on the output
             if ($this->response_type == 'json')
             {
@@ -140,9 +144,10 @@ class Categories_Api_Object extends Api_Object_Core {
         $ret_json_or_xml = ''; //will hold the json/xml string to return
 
         //find incidents
-        $this->query = "SELECT id, category_title AS title, category_description AS
-                description, category_color AS color FROM `".$this->table_prefix."category` WHERE
-                category_visible = 1 ORDER BY id DESC";
+        $this->query = "SELECT id, parent_id, category_title as title, category_description as description, 
+                category_color as color, category_position as position, category_image_thumb AS icon
+                FROM `".$this->table_prefix."category` WHERE
+                category_visible = 1 ORDER BY category_position ASC";
         
         $items = $this->db->query($this->query);
         
@@ -153,8 +158,10 @@ class Categories_Api_Object extends Api_Object_Core {
         
         $this->replar = array(); //assists in proper xml generation
 
+        $url_prefix = url::base().Kohana::config('upload.relative_directory').'/';
         foreach ($items as $item)
         {
+            $item->icon = $item->icon ? $url_prefix . $item->icon : '';
 
             //needs different treatment depending on the output
             if ($this->response_type == 'json')

@@ -9,7 +9,7 @@
  * http://www.gnu.org/copyleft/lesser.html
  * @author     Ushahidi Team <team@ushahidi.com> 
  * @package    Ushahidi - http://source.ushahididev.com
- * @module     Scheduler Controller  
+ * @subpackage Controllers
  * @copyright  Ushahidi - http://www.ushahidi.com
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL) 
 */
@@ -19,7 +19,6 @@ class Scheduler_Controller extends Controller
     public function __construct()
     {
         parent::__construct();
-        //$profiler = new Profiler;
     }
     
     public function index()
@@ -106,7 +105,6 @@ class Scheduler_Controller extends Controller
                     // Record Action to Log             
                     $scheduler_log = new Scheduler_Log_Model();
                     $scheduler_log->scheduler_id = $scheduler_id;
-                    $scheduler_log->scheduler_name = $scheduler->scheduler_name;
                     $scheduler_log->scheduler_status = "200";
                     $scheduler_log->scheduler_date = $schedule_time;
                     $scheduler_log->save();
@@ -134,8 +132,8 @@ class Scheduler_Controller extends Controller
             }
             if (isset($_GET['debug']) AND $_GET['debug'] == 1)
             {
-                //$debug .= "<BR /><BR />CRON DEBUG:<BR \>".nl2br($cron->getDebug());
-                $debug .= "<BR \>~~~~~~~~~~~~~~~~~~~~~~~~~~~<BR />~~~~~~~~~~~~~~~~~~~~~~~~~~~<BR /><BR /><BR />";
+                //$debug .= "<BR /><BR />CRON DEBUG:<BR />".nl2br($cron->getDebug());
+                $debug .= "<BR />~~~~~~~~~~~~~~~~~~~~~~~~~~~<BR />~~~~~~~~~~~~~~~~~~~~~~~~~~~<BR /><BR /><BR />";
             }
         }
         

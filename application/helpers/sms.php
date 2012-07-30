@@ -1,22 +1,22 @@
 <?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
  * SMS helper class
- * 
  *
- * @package	   SMS
- * @author	   Ushahidi Team
- * @copyright  (c) 2008 Ushahidi Team
- * @license	   http://www.ushahidi.com/license.html
+ * @package     Ushahidi
+ * @category    Helpers
+ * @author      Ushahidi Team
+ * @copyright   (c) 2008 Ushahidi Team
+ * @license     http://www.ushahidi.com/license.html
  */
 
-class sms_Core 
-{
+class sms_Core {
+
 	/**
 	 * Send The SMS Message Using Default Provider
+	 *
 	 * @param to mixed	The destination address.
 	 * @param from mixed  The source/sender address
 	 * @param text mixed  The text content of the message
-	 *
 	 * @return mixed/bool (returns TRUE if sent FALSE or other text for fail)
 	 */
 	public static function send($to = NULL, $from = NULL, $message = NULL)	
@@ -33,24 +33,29 @@ class sms_Core
 				->where("plugin_name", $provider)
 				->where("plugin_active", 1)
 				->find();
+			
+			// Plugin loaded
 			if ($plugin->loaded)
-			{ // Plugin exists and is active
-				
+			{
 				// 3. Does this plugin have the SMS Library in place?
-				$class = ucfirst($provider).'_SMS';
+				// SMS libaries should be suffixed with "_Sms_Provider"
+				$class = ucfirst($provider).'_Sms_Provider';
 				
-				$path = sms::find_provider($provider);
-				
-				if ($path)
-				{ // File Exists
-					$sender = new $class;
-					// 4. Does the send method exist in this class?
-					if (method_exists($sender, 'send'))
+				if (Kohana::find_file('libraries', $class))
+				{
+					$provider  = new $class;
+					
+					// Sanity check - Ensure all SMS providers are sub-classes of Sms_Provider_Core
+					if ( ! $provider instanceof Sms_Provider_Core)
 					{
-						$response = $sender->send($to, $from, $message);
-						
-						return $response;
+						throw new Kohana_Exception('All SMS Provider libraries must be be sub-classes of Sms_Provider_Core');
 					}
+					
+					// Proceed
+					$response = $provider->send($to, $from, $message);
+					
+					// Return
+					return $response;
 				}
 			}
 		}
@@ -73,35 +78,35 @@ class sms_Core
 			return "Missing Sender and/or Message";
 		
 		//Filters to allow modification of the values from the SMS gateway
-        Event::run('ushahidi_filter.message_sms_from',$from);
-        Event::run('ushahidi_filter.message_sms', $message);
-		
+		Event::run('ushahidi_filter.message_sms_from',$from);
+		Event::run('ushahidi_filter.message_sms', $message);
+
 		$services = new Service_Model();
 		$service = $services->where('service_name', 'SMS')->find();
+
 		if ( ! $service) 
-			return false;
-	
+			return FALSE;
+
 		$reporter = ORM::factory('reporter')
-			->where('service_id', $service->id)
-			->where('service_account', $from)
-			->find();
+		    ->where('service_id', $service->id)
+		    ->where('service_account', $from)
+		    ->find();
 
 		if ( ! $reporter->loaded == TRUE)
 		{
 			// get default reporter level (Untrusted)
 			$level = ORM::factory('level')
-				->where('level_weight', 0)
-				->find();
+			    ->where('level_weight', 0)
+			    ->find();
 			
 			$reporter->service_id = $service->id;
 			$reporter->level_id = $level->id;
-			$reporter->service_userid = null;
 			$reporter->service_account = $from;
-			$reporter->reporter_first = null;
-			$reporter->reporter_last = null;
-			$reporter->reporter_email = null;
-			$reporter->reporter_phone = null;
-			$reporter->reporter_ip = null;
+			$reporter->reporter_first = NULL;
+			$reporter->reporter_last = NULL;
+			$reporter->reporter_email = NULL;
+			$reporter->reporter_phone = NULL;
+			$reporter->reporter_ip = NULL;
 			$reporter->reporter_date = date('Y-m-d');
 			$reporter->save();
 		}
@@ -117,7 +122,7 @@ class sms_Core
 		$sms->message = $message;
 		$sms->message_type = 1; // Inbox
 		$sms->message_date = date("Y-m-d H:i:s",time());
-		$sms->service_messageid = null;
+		$sms->service_messageid = NULL;
 		$sms->save();
 		
 		// Notify Admin Of New Email Message
@@ -168,32 +173,5 @@ class sms_Core
 		}
 		
 		return TRUE;
-	}
-	
-	/**
-	 * Using this function because someone somewhere will name this file wrong!!!
-	 */
-	public static function find_provider($provider)
-	{
-		if ($path = Kohana::find_file('libraries', $provider.'_sms'))
-		{ // provider_sms
-			return $path;
-		}
-		elseif ($path = Kohana::find_file('libraries', $provider.'_SMS'))
-		{ // provider_SMS
-			return $path;
-		}
-		elseif ($path = Kohana::find_file('libraries', ucfirst($provider).'_sms'))
-		{ // Provider_sms
-			return $path;
-		}
-		elseif ($path = Kohana::find_file('libraries', ucfirst($provider).'_SMS'))
-		{ // Provider_SMS
-			return $path;
-		}
-		else
-		{
-			return false;
-		}	
 	}
 }

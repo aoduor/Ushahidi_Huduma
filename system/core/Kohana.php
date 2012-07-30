@@ -113,7 +113,7 @@ final class Kohana {
 
 			// Set default timezone, due to increased validation of date settings
 			// which cause massive amounts of E_NOTICEs to be generated in PHP 5.2+
-			date_default_timezone_set(empty($timezone) ? date_default_timezone_get() : $timezone);
+			date_default_timezone_set(empty($timezone) ? 'UTC' : $timezone);
 		}
 
 		// Restore error reporting
@@ -231,8 +231,14 @@ final class Kohana {
 			// Run system.pre_controller
 			Event::run('system.pre_controller');
 
+			// Begin benchmark for the controller
+			Benchmark::f_start(ucfirst(Router::$controller).'_Controller');
+
 			// Create a new controller instance
 			$controller = $class->newInstance();
+
+			// End benchmark for the controller
+			Benchmark::f_stop(ucfirst(Router::$controller).'_Controller');
 
 			// Controller constructor has been executed
 			Event::run('system.post_controller_constructor');
@@ -867,7 +873,7 @@ final class Kohana {
 			if ( ! headers_sent())
 			{
 				// Send the 500 header
-				header('HTTP/1.1 500 Internal Server Error');
+				header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error');
 			}
 		}
 		else
@@ -1218,7 +1224,11 @@ final class Kohana {
 
 		if ($line === NULL)
 		{
-			self::log('error', 'Missing i18n entry '.$key.' for language '.$locale);
+			// Only save error to log for en_US to the log since it's the default fallback
+			if ($locale == 'en_US')
+			{
+				self::log('error', 'Missing i18n entry '.$key.' for language '.$locale);
+			}
 
 			if ($force_locale != NULL)
 			{
@@ -1659,7 +1669,7 @@ class Kohana_Exception extends Exception {
 	public function sendHeaders()
 	{
 		// Send the 500 header
-		header('HTTP/1.1 500 Internal Server Error');
+		header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error');
 	}
 
 } // End Kohana Exception
@@ -1724,7 +1734,7 @@ class Kohana_404_Exception extends Kohana_Exception {
 	public function sendHeaders()
 	{
 		// Send the 404 header
-		header('HTTP/1.1 404 File Not Found');
+		header($_SERVER['SERVER_PROTOCOL'] . ' 404 File Not Found');
 	}
 
 } // End Kohana 404 Exception

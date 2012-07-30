@@ -2,7 +2,7 @@
 /**
  * GeoCoder Library
  * Uses a variety of methods to geocode locations and feeds
- * 
+ *
  * @package    GeoCoder
  * @author     Ushahidi Team
  * @copyright  (c) 2008 Ushahidi Team
@@ -13,7 +13,7 @@ define("GEOCODER_GOOGLE", "maps.google.com");
 define("GEOCODER_GEONAMES", "ws.geonames.org");
 
 class Geocoder_Core {
-	
+
 	/**
 	 * Google Location GeoCoding
 	 *
@@ -28,18 +28,25 @@ class Geocoder_Core {
 			$api_key = Kohana::config('settings.api_google');
 			if ($api_key)
 			{
-				$base_url = "http://" . GEOCODER_GOOGLE . "/maps/geo?output=xml" . "&key=" . api_key;
-				
+				$base_url = "http://" . GEOCODER_GOOGLE . "/maps/geo?output=xml" . "&key=" . $api_key;
+
 				// Deal with the geocoder timing out during operations
 				$geocode_pending = true;
-				
+				$delay = 0;
+
 				while ($geocode_pending) {
 					$request_url = $base_url . "&q=" . urlencode($address);
 
 					//$xml = simplexml_load_file(utf8_encode($request_url)) or die("url not loading");
-					$page = file_get_contents($request_url);
+					// Get XML from geocoder. Squashing errors in case internet connection is down
+					$page = @file_get_contents($request_url);
 					$page = utf8_encode($page);
-					$xml = new SimpleXMLElement($page);
+					// Try to parse XML - assume geocoder is not accessible if we can't
+					try {
+						$xml = new SimpleXMLElement($page);
+					} catch ( Exception $e ) {
+						return false;
+					}
 
 					$status = $xml->Response->Status->code;
 					if (strcmp($status, "200") == 0)
@@ -51,9 +58,9 @@ class Geocoder_Core {
 						// Format: Longitude, Latitude, Altitude
 						$lng = $coordinatesSplit[0];
 						$lat = $coordinatesSplit[1];
-						
+
 						return array($lng, $lat);
-						
+
 					}
 					else if (strcmp($status, "620") == 0)
 					{
@@ -65,9 +72,11 @@ class Geocoder_Core {
 						// failure to geocode
 						return false;
 					}
-					usleep($delay);
+
+					if ($delay)
+						usleep($delay);
 				}
-				
+
 			}
 			// Install doesn't have api key - can't geocode with google
 			else
@@ -80,8 +89,8 @@ class Geocoder_Core {
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Geonames Feeds GeoCoding (RSS to GEORSS)
 	 * Due to limitations, this returns only 20 items
@@ -92,7 +101,7 @@ class Geocoder_Core {
 	function geocode_feed ($feed_url = NULL)
 	{
 		$base_url = "http://" . GEOCODER_GEONAMES . "/rssToGeoRSS?";
-		
+
 		if ($feed_url)
 		{
 			// First check to make sure geonames webservice is running
@@ -106,17 +115,17 @@ class Geocoder_Core {
 			{ // Down perhaps?? Use direct feed
 				$request_url = $feed_url;
 			}
-			
+
 			$georss = file_get_contents($request_url);
 			//$georss = utf8_encode($georss);
 
 			return $georss;
-			
+
 		}
 		else
 		{
 			return false;
 		}
 	}
-	
+
 }

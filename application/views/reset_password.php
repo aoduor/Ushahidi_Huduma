@@ -19,12 +19,12 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <title><?php echo Kohana::lang('ui_main.reset_password');?></title>
-<link href="<?php echo url::base() ?>media/css/login.css" rel="stylesheet" type="text/css" />
+<link href="<?php echo url::file_loc('css'); ?>media/css/login.css" rel="stylesheet" type="text/css" />
 </head>
 
 <body>
 <div id="ushahidi_login_container">
-    <div id="ushahidi_login_logo"><img src="<?php echo url::base() ?>media/img/admin/logo_login.gif" width="400" height="80" /></div>
+    <div id="ushahidi_login_logo"><img src="<?php echo url::file_loc('img'); ?>media/img/admin/logo_login.gif" width="400" height="80" /></div>
     <div id="ushahidi_login">
       <table width="100%" border="0" cellspacing="3" cellpadding="4" background="" id="ushahidi_loginbox">
       <?php print form::open(NULL,array('id' => 'frm_reset',
@@ -38,28 +38,29 @@
 				<?php
 				foreach ($errors as $error_item => $error_description)
 				{
-					// print "<li>" . $error_description . "</li>";
-					print (!$error_description) ? '' : "&#8226;&nbsp;" . $error_description . "<br />";
+					if ($error_description)
+					{
+						echo '&#8226;&nbsp;'.$error_description.'<br />';
+					}
 				}
 				?>
 				</td>
             </tr>
-			<?php } ?>
-			<?php
-			if( $password_reset ) { ?>
+			<?php }
+			if ($password_reset) { ?>
 			<tr>
 				<td align="left">
 					<!-- green-box -->
 					<div class="green-box">
 						<h3><?php echo Kohana::lang('ui_main.password_reset_confirm'); ?></h3>
 						<br />
-						<a href="<?php echo url::base().'login'?>"><?php echo Kohana::lang('ui_main.login');?></a>
+						<a href="<?php echo url::site().'login'?>"><?php echo Kohana::lang('ui_main.login');?></a>
 					</div>
 				</td>
 			</tr>
 			<?php } else { ?>
             <tr>
-              <td><strong><?php echo Kohana::lang('ui_main.password_reset_prompt')?></strong><br />
+              <td><strong><?php echo Kohana::lang('ui_main.registered_email')?></strong><br />
               <?php print form::input('resetemail', '', 
 						' class="login_text"'); ?></td>
             </tr>

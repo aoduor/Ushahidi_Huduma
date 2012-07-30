@@ -8,7 +8,7 @@
  * http://www.gnu.org/copyleft/lesser.html
  * @author	   Ushahidi Team <team@ushahidi.com> 
  * @package	   Ushahidi - http://source.ushahididev.com
- * @module	   Alerts Controller  
+ * @subpackage Scheduler
  * @copyright  Ushahidi - http://www.ushahidi.com
  * @license	   http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL) 
 */
@@ -32,12 +32,12 @@ class S_Alerts_Controller extends Controller {
 		// Create A 15 Minute SEND LOCK
 		// This lock is released at the end of execution
 		// Or expires automatically
-		$alerts_lock = $this->cache->get("alerts_lock");
+		$alerts_lock = $this->cache->get(Kohana::config('settings.subdomain')."_alerts_lock");
 		if ( ! $alerts_lock)
 		{
 			// Lock doesn't exist
 			$timestamp = time();
-			$this->cache->set("alerts_lock", $timestamp, array("alerts"), 900);
+			$this->cache->set(Kohana::config('settings.subdomain')."_alerts_lock", $timestamp, array("alerts"), 900);
 		}
 		else
 		{
@@ -49,7 +49,7 @@ class S_Alerts_Controller extends Controller {
 	
 	function __destruct()
 	{
-		$this->cache->delete("alerts_lock");
+		$this->cache->delete(Kohana::config('settings.subdomain')."_alerts_lock");
 	}
 	
 	public function index() 
@@ -90,11 +90,12 @@ class S_Alerts_Controller extends Controller {
 			// ** Pre-Formatting Message ** //
 			// Convert HTML to Text
 			$incident_description = $incident->incident_description;
+			$incident_url = url::site().'reports/view/'.$incident->id;
 			$html2text = new Html2Text($incident_description);
 			$incident_description = $html2text->get_text();
 
 			// EMAIL MESSAGE
-			$email_message = $incident_description;
+			$email_message = $incident_description."\n\n".$incident_url;
 
 			// SMS MESSAGE
 			$sms_message = $incident_description;
@@ -189,7 +190,7 @@ class S_Alerts_Controller extends Controller {
 				}
 			} // End For Each Loop
 			
-			
+
 			// Update Incident - All Alerts Have Been Sent!
 			$update_incident = ORM::factory('incident', $incident->id);
 			if ($update_incident->loaded)

@@ -26,8 +26,9 @@ $config['hash_method'] = 'sha1';
 /**
  * Defines the hash offsets to insert the salt at. The password hash length
  * will be increased by the total number of offsets.
+ * CHANGE ME: THIS SHOULD BE UNIQUE TO YOUR DEPLOYMENT
  */
-$config['salt_pattern'] = '3, 5, 6, 10, 24, 26, 35, 36, 37, 40';
+$config['salt_pattern'] = '3, 4, 9, 12, 28, 29, 32, 33, 37, 39';
 
 /**
  * Set the auto-login (remember me) cookie lifetime, in seconds. The default
@@ -47,3 +48,9 @@ $config['users'] = array
 (
 	// 'admin' => '4ccd0e25c2a7ffefd4b92ecbbd4781752920145f826a881073',
 );
+
+/**
+ * Allowed Password Length. 127 is the upper limit.
+ * ie. '8,127' says passwords must be between 8 and 127 characters long
+ */
+$config['password_length'] = '1,127';

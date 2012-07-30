@@ -9,7 +9,7 @@
  * http://www.gnu.org/copyleft/lesser.html
  * @author	   Ushahidi Team <team@ushahidi.com>
  * @package	   Ushahidi - http://source.ushahididev.com
- * @module	   Admin Settings Controller
+ * @subpackage Admin
  * @copyright  Ushahidi - http://www.ushahidi.com
  * @license	   http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
  */
@@ -21,7 +21,7 @@ class Api_Controller extends Admin_Controller {
         parent::__construct();
         
         $this->template->this_page = 'settings';
-        if ( ! admin::permissions($this->user, "manage"))
+        if ( ! $this->auth->has_permission("manage"))
         {
             url::redirect(url::site().'admin/dashboard');
         }
@@ -32,7 +32,7 @@ class Api_Controller extends Admin_Controller {
      */
     public function index()
     {
-        $this->template->content = new View('admin/api');
+        $this->template->content = new View('admin/settings/api/main');
 
         // Set up and initialize form field names
         $form = array
@@ -149,7 +149,7 @@ class Api_Controller extends Admin_Controller {
         );
         
         // Javascript header
-        $this->template->js = new View('admin/api_js');
+        $this->template->js = new View('admin/settings/api/api_js');
     }
     
     /**
@@ -157,7 +157,7 @@ class Api_Controller extends Admin_Controller {
      */
     public function log()
     {
-        $this->template->content = new View('admin/apilogs');
+        $this->template->content = new View('admin/settings/api/logs');
         $this->template->content->this_page='apilogs';
         $this->template->content->title = Kohana::lang('ui_main.api_logs');
         
@@ -246,13 +246,13 @@ class Api_Controller extends Admin_Controller {
                 FROM '.$this->table_prefix.'api_log al
                 LEFT JOIN '.$this->table_prefix.'api_banned AS ab ON (ab.banned_ipaddress = al.api_ipaddress)
                 ORDER BY al.api_date DESC
-                LIMIT ' . $pagination->sql_offset. ', '.(int) Kohana::config('settings.items_per_page_admin')
+                LIMIT ' . $pagination->sql_offset. ', '.$this->items_per_page
             );
         
         /*    
         $api_logs = ORM::factory('api_log')
                         ->orderby('api_date', 'asc')
-                        ->find_all((int) Kohana::config('settings.items_per_page_admin'), $pagination->sql_offset);
+                        ->find_all($this->items_per_page, $pagination->sql_offset);
         */
         
         // Set the total no. of items
@@ -267,15 +267,15 @@ class Api_Controller extends Admin_Controller {
         $this->template->content->pagination = $pagination;
         
         // Javascript header
-        $this->template->js = new View('admin/apilogs_js');
+        $this->template->js = new View('admin/settings/api/logs_js');
     }
     
     /**
      * Displays the list of IP addresses that have been banned from access the API
      */
-    public function apibanned()
+    public function banned()
     {
-        $this->template->content = new View('admin/api_banned');
+        $this->template->content = new View('admin/settings/api/banned');
         $this->template->content->this_page = 'apibanned';
         $this->template->content->title = Kohana::lang('ui_main.api_banned');
         
@@ -327,14 +327,14 @@ class Api_Controller extends Admin_Controller {
         // Set up pagination
         $pagination = new Pagination(array(
             'query_string' => 'page',
-            'items_per_page' => (int) Kohana::config('settings.items_per_page_admin'),
+            'items_per_page' => $this->items_per_page,
             'total_items' => ORM::factory('api_banned')->count_all()
         ));
         
         // Fetch all the IP addresses banned from accessing the API
         $api_bans = ORM::factory('api_banned')
                         ->orderby('banned_date', 'desc')
-                        ->find_all((int) Kohana::config('settings.items_per_page_admin'), $pagination->sql_offset);
+                        ->find_all($this->items_per_page, $pagination->sql_offset);
         
         
         // Set the total no. of items
@@ -349,7 +349,6 @@ class Api_Controller extends Admin_Controller {
         $this->template->content->pagination = $pagination;
         
         // Javascript header
-        $this->template->js = new View('admin/api_banned_js');
+        $this->template->js = new View('admin/settings/api/banned_js');
     }
-    
 }

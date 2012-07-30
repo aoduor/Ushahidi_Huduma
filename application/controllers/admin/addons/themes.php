@@ -9,7 +9,7 @@
  * http://www.gnu.org/copyleft/lesser.html
  * @author     Ushahidi Team <team@ushahidi.com> 
  * @package    Ushahidi - http://source.ushahididev.com
- * @module     Addon Manager Controller
+ * @subpackage Admin
  * @copyright  Ushahidi - http://www.ushahidi.com
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL) 
  */
@@ -30,7 +30,7 @@ class Themes_Controller extends Admin_Controller {
 	
 	function index()
 	{
-		$this->template->content = new View('admin/themes');
+		$this->template->content = new View('admin/addons/themes');
 		$this->template->content->title = 'Addons';
 
 		// setup and initialize form field names
@@ -62,9 +62,7 @@ class Themes_Controller extends Admin_Controller {
 	        if ($post->validate())
 	        {
 	            // Yes! everything is valid
-				$settings = new Settings_Model(1);
-				$settings->site_style = $post->site_style;
-				$settings->save();
+				Settings_Model::save_setting('site_style',$post->site_style);
 				
 				//add details to application/config/email.php
 				//$this->_add_email_settings($settings);
@@ -98,11 +96,9 @@ class Themes_Controller extends Admin_Controller {
 		else
 		{
 			// Retrieve Current Settings
-			$settings = ORM::factory('settings', 1);
-
 			$form = array
 		    (
-		        'site_style' => $settings->site_style
+		        'site_style' => Settings_Model::get_setting('site_style')
 		    );
 		}
 		
@@ -173,14 +169,25 @@ class Themes_Controller extends Admin_Controller {
 
 			$theme_data = $this->_get_theme_data($themes_path.$theme_file);
 
-			$name        = $theme_data['Name'];
-			$title       = $theme_data['Title'];
-			$description = $theme_data['Description'];
-			$demo  		 = $theme_data['Demo'];
-			$version     = $theme_data['Version'];
-			$author      = $theme_data['Author'];
-			$author_email= $theme_data['Author_Email'];
-			$stylesheet  = dirname($theme_file);
+			$name         = $theme_data['Name'];
+			$title        = $theme_data['Title'];
+			$description  = $theme_data['Description'];
+			$demo         = $theme_data['Demo'];
+			$version      = $theme_data['Version'];
+			$author       = $theme_data['Author'];
+			$author_email = $theme_data['Author_Email'];
+			$stylesheet   = dirname($theme_file);
+			
+			if(isset($theme_data['Checkins']))
+			{
+				$checkins = (int)$theme_data['Checkins'];
+			}else{
+				$checkins = 0;
+			}
+			
+			// We want to hide checkin themes if checkins is not enabled
+			
+			if( ! Kohana::config('settings.checkins') AND $checkins == 1) continue;
 
 			$screenshot = false;
 			foreach ( array('png', 'gif', 'jpg', 'jpeg') as $ext )
@@ -203,7 +210,7 @@ class Themes_Controller extends Admin_Controller {
 				$name = "$name/$stylesheet";
 			}
 
-			$themes[$name] = array('Name' => $name, 'Title' => $title, 'Description' => $description, 'Demo' => $demo, 'Version' => $version, 'Author' => $author, 'Author_Email' => $author_email, 'Screenshot' => $screenshot, 'Template_Dir' => $stylesheet);
+			$themes[$name] = array('Name' => $name, 'Title' => $title, 'Description' => $description, 'Demo' => $demo, 'Version' => $version, 'Author' => $author, 'Author_Email' => $author_email, 'Checkins' => $checkins, 'Screenshot' => $screenshot, 'Template_Dir' => $stylesheet);
 		}
 		
 		return $themes;		
@@ -240,12 +247,17 @@ class Themes_Controller extends Admin_Controller {
 			$author = trim(text::html2txt($author[1]));
 		else
 			$author = Kohana::lang('ui_admin.anonymous');
+		
+		if ( preg_match( '|'.Kohana::lang('ui_admin.checkins').':(.*)|i', $theme_data, $checkins ) )
+			$checkins = trim(text::html2txt($checkins[1]));
+		else
+			$checkins = 0;
 			
 		if ( preg_match( '|'.Kohana::lang('ui_admin.author_email').':(.*)|i', $theme_data, $author_email ) )
 			$author_email = trim(text::html2txt($author_email[1]));
 		else
 			$author_email = '';
 
-		return array( 'Name' => $name, 'Title' => $theme, 'Description' => $description, 'Demo' => $demo_url, 'Version' => $version, 'Author' => $author, 'Author_Email' => $author_email );
+		return array( 'Name' => $name, 'Title' => $theme, 'Description' => $description, 'Demo' => $demo_url, 'Version' => $version, 'Author' => $author, 'Author_Email' => $author_email, 'Checkins' => $checkins );
 	}
 }

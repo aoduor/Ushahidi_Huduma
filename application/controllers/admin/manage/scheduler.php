@@ -9,7 +9,7 @@
  * http://www.gnu.org/copyleft/lesser.html
  * @author     Ushahidi Team <team@ushahidi.com>
  * @package    Ushahidi - http://source.ushahididev.com
- * @module     Admin Scheduler Controller
+ * @subpackage Admin
  * @copyright  Ushahidi - http://www.ushahidi.com
  * @license    http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
  */
@@ -22,7 +22,7 @@ class Scheduler_Controller extends Admin_Controller
 		$this->template->this_page = 'manage';
 
 		// If user doesn't have access, redirect to dashboard
-		if ( ! admin::permissions($this->user, "manage"))
+		if ( ! $this->auth->has_permission("manage"))
 		{
 			url::redirect(url::site().'admin/dashboard');
 		}
@@ -30,7 +30,7 @@ class Scheduler_Controller extends Admin_Controller
 
 	function index()
 	{
-		$this->template->content = new View('admin/scheduler');
+		$this->template->content = new View('admin/manage/scheduler/main');
 
 		// Check if we should be running the scheduler and then do it
 		if (isset($_GET['run_scheduler'])){
@@ -51,7 +51,6 @@ class Scheduler_Controller extends Admin_Controller
 					// Record Action to Log
 					$scheduler_log = new Scheduler_Log_Model();
 					$scheduler_log->scheduler_id = $scheduler->id;
-					$scheduler_log->scheduler_name = $scheduler->scheduler_name;
 					$scheduler_log->scheduler_status = "200";
 					$scheduler_log->scheduler_date = $schedule_time;
 					$scheduler_log->save();
@@ -60,8 +59,7 @@ class Scheduler_Controller extends Admin_Controller
 		}
 
 		// setup and initialize form field names
-		$form = array
-		(
+		$form = array(
 			'action' => '',
 			'schedule_id'	  => '',
 			'scheduler_weekday'	  => '',
@@ -76,7 +74,7 @@ class Scheduler_Controller extends Admin_Controller
 		$form_saved = FALSE;
 		$form_action = "";
 
-		if ( $_POST )
+		if ($_POST)
 		{
 			//print_r($_POST);
 			$post = Validation::factory( $_POST );
@@ -100,19 +98,13 @@ class Scheduler_Controller extends Admin_Controller
 				$scheduler = new Scheduler_Model($scheduler_id);
 				if ($post->action == 'v')
 				{ // Active/Inactive Action
-					if ($scheduler->loaded==true)
+					if ($scheduler->loaded == TRUE)
 					{
-						if ($scheduler->scheduler_active == 1)
-						{
-							$scheduler->scheduler_active = 0;
-						}
-						else
-						{
-							$scheduler->scheduler_active = 1;
-						}
+						$scheduler->scheduler_active = ($scheduler->scheduler_active == 1) ? 0 : 1;
+						
 						$scheduler->save();
 						$form_saved = TRUE;
-						$form_action = strtoupper(Kohana::lang('ui_admin.modified'));
+						$form_action = utf8::strtoupper(Kohana::lang('ui_admin.modified'));
 					}
 				}
 				else
@@ -123,7 +115,7 @@ class Scheduler_Controller extends Admin_Controller
 					$scheduler->scheduler_minute = $post->scheduler_minute;
 					$scheduler->save();
 					$form_saved = TRUE;
-					$form_action = strtoupper(Kohana::lang('ui_admin.added_edited'));
+					$form_action = utf8::strtoupper(Kohana::lang('ui_admin.edited'));
 				}
 
 			} else {
@@ -139,14 +131,13 @@ class Scheduler_Controller extends Admin_Controller
         // Pagination
 		$pagination = new Pagination(array(
 			'query_string' => 'page',
-			'items_per_page' => (int) Kohana::config('settings.items_per_page_admin'),
+			'items_per_page' => $this->items_per_page,
 			'total_items'	=> ORM::factory('scheduler')->count_all()
 			));
 
 		$schedules = ORM::factory('scheduler')
 			->orderby('scheduler_name', 'asc')
-			->find_all((int) Kohana::config('settings.items_per_page_admin'),
-				$pagination->sql_offset);
+			->find_all($this->items_per_page, $pagination->sql_offset);
 
 		$this->template->content->weekday_array = array(
 			"-1"=>"ALL",
@@ -198,18 +189,18 @@ class Scheduler_Controller extends Admin_Controller
 		$this->template->content->errors = $errors;
 
         // Javascript Header
-		$this->template->js = new View('admin/scheduler_js');
+		$this->template->js = new View('admin/manage/scheduler/scheduler_js');
 	}
 
 
 	public function log()
 	{
-		$this->template->content = new View('admin/scheduler_log');
+		$this->template->content = new View('admin/manage/scheduler/log');
 
 		// Pagination
 		$pagination = new Pagination(array(
 			'query_string'   => 'page',
-			'items_per_page' => (int) Kohana::config('settings.items_per_page_admin'),
+			'items_per_page' => $this->items_per_page,
 			'total_items'	=> ORM::factory('scheduler_log')
 				->count_all()
 		));
@@ -217,7 +208,7 @@ class Scheduler_Controller extends Admin_Controller
 
 		$scheduler_logs = ORM::factory('scheduler_log')
 			->orderby('scheduler_date','desc')
-			->find_all((int) Kohana::config('settings.items_per_page_admin'), $pagination->sql_offset);
+			->find_all($this->items_per_page, $pagination->sql_offset);
 
 		$this->template->content->scheduler_logs = $scheduler_logs;
 		$this->template->content->pagination = $pagination;

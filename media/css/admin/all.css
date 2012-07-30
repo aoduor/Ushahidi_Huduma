@@ -1,9 +1,9 @@
 body{
 	margin:0;
 	font:12px/16px "Trebuchet MS",sans-serif;
-	background:url(../../img/admin/body-bg.gif) repeat-x;
 	color:#555;
 	min-width:960px;
+	padding:0;
 }
 form{
 	margin:0;
@@ -15,7 +15,7 @@ form{
 }
 h1, h2 ,h3, h4{margin:0;}
 h1{
-	padding:58px 0 0 2px;
+	padding:16px 0 0 2px;
 	color:#000;
 	font:28px/30px Georgia, "Times New Roman", Times, serif;
 }
@@ -104,7 +104,7 @@ a:hover{ text-decoration:none;}
 }
 /*-- info-nav --*/
 .info-nav {
-	margin:40px 7px 0 0;
+	margin:16px 7px 0 0;
 	display:inline;
 	float:right;
 }
@@ -153,9 +153,28 @@ a:hover{ text-decoration:none;}
 	vertical-align: middle;
 	width:100px;
 }
+
+.info-nav .language-box{
+	margin:0;
+	padding:6px 0 9px 20px;
+	border-top:1px solid #898989;
+	border-bottom:1px solid #898989;
+	float:left;
+	line-height:25px;
+}
+.info-nav .language-box select{
+	width: 160px;
+	margin: 0;
+	padding: 1px;
+	font-size: 11px;
+	color: #00789F;
+}
+
+.info-buttons { clear:both; margin:10px 0 0 0; text-align:right; }
+
 /*-- nav-holder --*/
 .nav-holder {
-	padding:43px 0 0;
+	padding:18px 0 0;
 	width:100%;
 	clear:both;
 	overflow:hidden;
@@ -306,10 +325,10 @@ ul.inf li a{
 	clear:both;
 	overflow:hidden;
 }
-.post-edit-log-red{
+.post-edit-log-blue{
 	padding:3px;
-	background-color:#FFE7D5;
-	border:1px solid #FFB782;
+	background-color:#F2F7FA;
+	border:1px solid #A8CADE;
 }
 .post-edit-log-gray{
 	padding:3px;
@@ -420,6 +439,9 @@ ul.nav-list li a.categories { background:url(../../img/admin/category-icon.gif) 
 ul.nav-list li a.locations { background:url(../../img/admin/locations-icon.gif) no-repeat 0 2px;}
 ul.nav-list li a.media { background:url(../../img/admin/media-icon.gif) no-repeat 0 2px;}
 ul.nav-list li a.messages { background:url(../../img/admin/messages-icon.gif) no-repeat 0 2px;}
+ul.nav-list li a.alerts { background:url(../../img/admin/alerts-icon.png) no-repeat 0 2px;}
+ul.nav-list li a.votes { background:url(../../img/admin/votes-icon.png) no-repeat 0 2px;}
+ul.nav-list li a.checkins { background:url(../../img/admin/checkins-icon.png) no-repeat 0 2px;}
 ul.nav-list li span.locations {
 	background:url(../../img/admin/locations-icon.gif) no-repeat 0 2px;
 	padding:0 0 5px 40px;
@@ -677,10 +699,11 @@ table td{
 	width:25px;
 }
 .table .col-2{ width:539px;}
+.table .col-2 p{ width:539px;word-wrap: break-word;}
 .table .col-2_sub{
 	width:519px;
-	padding-left:20px;
-	background:url(../../img/admin/arrow.gif) no-repeat 3px 17px;
+	padding-left:30px;
+	background:url(../../img/admin/arrow.gif) no-repeat 13px 22px;
 }
 .table .col-3{
 	width:103px;
@@ -700,6 +723,15 @@ table td{
 	padding:12px 0 10px 10px;
 	border-right:2px solid #bbb;
 }
+.table .col-drag{
+	background-color:#ffffcc;
+}
+.table .col-show-handle{
+	background-image: url(../../img/admin/drag.gif);
+	background-repeat: no-repeat;
+	background-position: center center;
+	cursor: move;
+}
 .table .post{
 	margin:0;
 	padding:0 0 8px;
@@ -716,6 +748,9 @@ table td{
 	line-height:15px;
 	margin:0;
 	padding:3px 20px 0 0;
+}
+.table .post .incident-id{
+	float:right;
 }
 .table th {
 	padding-top:0 !important;
@@ -854,8 +889,23 @@ ul.pager li a.active {background:#f2f7fa;}
 	width:363px;
 	padding:10px 5px;
 }
+div.custom_div {
+	width: 100%;
+    padding: 5px;
+    border: 1px dotted #C0C2B0;
+    margin-bottom: 20px;
+}
+div.custom_div h2 {
+    font-size: 150%;
+    margin-bottom: 10px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 5px;
+    background: #E8E8E8;
+}
 .report-form input.custom_text {
 	width:363px;
+	margin-bottom: 10px;
 }
 .report-form textarea{
 	width:368px;
@@ -896,6 +946,15 @@ ul.pager li a.active {background:#f2f7fa;}
 	font-size:10px;
 	line-height:12px;
 	color:#a1a1a1;
+}
+div.experimental{
+	float:left;
+	padding-left:20px;
+	font-weight:bold;
+	text-transform: uppercase;
+}
+.welcome-form{
+	padding:12px 0px 0px 12px;
 }
 /*-- f-col --*/
 .f-col {
@@ -949,7 +1008,16 @@ a.new-cat, a.show-messages {
 	background:url(../../img/icon-plus.gif) no-repeat 0 4px;
 	float:right;
 }
-a.new-cat:hover, a.show-messages:hover;{ text-decoration:none;}
+a.new-cat:hover, a.show-messages:hover{ text-decoration:none;}
+a.category_translations {
+	text-decoration:underline;
+	font-size:10px;
+	padding:5px 0 0 18px;
+	background:url(../../img/icon-plus.gif) no-repeat 0 4px;
+	float:left;
+	margin: 10px 10px 0 10px;
+}
+a.category_translations:hover {text-decoration: none;}
 .category {
 	background:#f5f5f5;
 	width:377px;
@@ -973,6 +1041,20 @@ a.new-cat:hover, a.show-messages:hover;{ text-decoration:none;}
 .category ul li label{
 	color:#555;
 	font-size:11px;
+}
+.category_translations_form_fields{
+	display:none;
+	margin: 10px 10px 0 10px
+}
+.category_translations_form_fields .category_lang {
+	margin-top:10px;
+	clear: left;
+}
+.category_translations_form_fields .tab_form_item {
+	margin: 0 20px 0 0;
+}
+#addedit .category_description {
+	width: 250px;
 }
 /*Categories Tree*/
 .category ul ul { width: auto; float: none; }
@@ -1119,6 +1201,12 @@ a.rem { background:url(../../img/icon-minus.gif) no-repeat;}
 input.short {
 	width:50px;
 }
+input.short2 {
+	width:100px;
+}
+input.short3 {
+	width:150px;
+}
 input.long {
 	width:454px;
 }
@@ -1176,12 +1264,18 @@ input.long2 {
 	width:180px;
 }
 
-.report-form .save-rep-btn,
-.report-form .save-close-btn,
-.report-form .cancel-btn{
+.save-rep-btn,
+.save-close-btn,
+.cancel-btn {
 	display:inline;
 	float:left;
-	margin:11px 12px 0 0;
+	margin:13px 12px 0 0;
+	padding:0 9px;
+	color:#5c5c5c;
+	background:#f2f7fa;
+	border:1px solid #d1d1d1;
+	text-transform: uppercase;
+	line-height: 24px;
 }
 .report-form .save-rep-btn { margin-left:20px;}
 .report-form .head .save-rep-btn,
@@ -1189,6 +1283,13 @@ input.long2 {
 	margin:0 9px 0 0;
 	display:inline;
 	float:right;
+}
+
+.save-rep-btn:hover,
+.save-close-btn:hover,
+.cancel-btn:hover
+{
+	cursor: pointer;
 }
 .report-form .report_thumbs {
 	border-bottom:1px #ccc dotted;
@@ -1269,6 +1370,7 @@ p.bold_desc{
 	float:left; 
 	margin:-1px; 
 	border:3px solid #c2c2c2;
+	position:relative;
 }
 .mini_map_holder{
 	margin: 0 0 20px 20px;	
@@ -1343,6 +1445,7 @@ div.sms_holder, div.settings_holder{
 	div.theme_holder{
 		width:243px;
 		margin-right:20px;
+		margin-bottom:20px;
 		border:1px solid #ccc;
 		float:left;
 		padding:10px;
@@ -1564,6 +1667,8 @@ a.new-form_field{
 .forms_fields_edit{
 	font-size:10px;
 	margin:5px 0 0 0;
+	padding-bottom:10px;
+	border-bottom:1px solid #ccc;
 }
 .forms_fields_loading{
 	float:left;
@@ -1598,6 +1703,13 @@ a.new-form_field{
 }
 .hide{
 	display:none;
+}
+
+.required,
+.report-form h4 .required {
+  color: #CC1830;
+  font-size: 15px;
+  font-weight: normal;
 }
 
 /*-- Color Picker --*/
@@ -1805,18 +1917,18 @@ UL.mapNavigation LI A:focus {
 }
 
 /* update info */
-#update-info {
+.update-info {
     line-height: 29px;
     font-size: 12px;
-    text-align: center;
     background : #FFFEEB;
     border-bottom-width: 1px;
     border-bottom-style: solid;
     border-top-width: 1px;
     border-top-style: solid;
+    padding: 5px;
 }
 
-#update-info a {
+.update-info a {
     font-size: 1.1em;
 }
 
@@ -2033,6 +2145,13 @@ h4 span.highlight{
 		border-width:0;
 	}
 	
+.preview_div{
+	margin:5px 0 0 0;
+	border:1px dotted #ccc;
+	padding:10px;
+	display:none;
+}	
+	
 /* Upgrade Process */
 #upgrade_log .upgrade_log_message{
 	font-size:14px;
@@ -2082,6 +2201,337 @@ ul.map-toggles li a:active { display:inline-block; padding:3px 5px 3px 17px; out
 	a.taller-map	{ background:transparent url(../../img/admin/icon_sprite.png) -4px -221px no-repeat;  }
 	a.shorter-map	{ background:transparent url(../../img/admin/icon_sprite.png) -4px -241px no-repeat;  }
 	a.smaller-map	{ background:transparent url(../../img/admin/icon_sprite.png) -4px -182px no-repeat;  }
+	
+/* Map Labeler */	
+#geometryLabelerHolder{
+	position:absolute;
+	bottom:0;
+	display:none;
+	width:100%;
+	background-color:darkblue;
+	opacity:0.8;
+	z-index:5000;
+}
+	#geometryLabeler{
+		padding:10px;
+	}
+		#geometryLabeler label{
+			font-weight:bold;
+			color:#fff;
+			margin-right:5px;
+		}
+		#geometryLabeler .lbl_text{
+			width:80px;
+			margin-right:15px;
+		}
+		#geometryLabeler .lbl_text2{
+			width:180px;
+		}
+		#geometryLabeler #geometryLabelComment{
+			padding-bottom:7px;
+			margin-bottom:7px;
+			border-bottom:1px dotted #fff;
+		}
+		#geometryLat, #geometryLon{
+			display:none;
+		}
+		#geometryLabelerClose{
+			z-index:5001;
+			position:absolute;
+			top:2px;
+			right:0;
+			width:18px;
+			height:18px;
+			background: url("../../img/openlayers/layer-switcher-minimize.png") no-repeat;
+			cursor: pointer;
+		}
+		
+		
+/* Members */
+.member_profile{
+	clear:both;
+}
+	.member_photo{
+		float:left;
+		margin:0 15px 0 15px;
+	}
+	.member_photo img{
+		border:2px solid #f5f5f5;
+		padding:3px;
+	}
+	.member_info{
+		float:left;
+		width:295px;
+		font-size:110%;
+	}
+	.member_info_row{
+		margin-bottom:3px;
+		padding:3px;
+		border-bottom:1px dotted #ccc;
+	}
+		.member_info_row:hover{
+			background-color:#ffffcc;
+		}
+		.member_info_label{
+			font-weight:bold;
+		}
+		.member_info_row ul {
+			margin:0;
+			padding:0;
+			margin-left: 10px;
+			padding-left: 15px;
+		}
+			.member_info_row ul li{
+				margin:2px 0 2px 0;
+			}
+			
+		.member_reputation{
+			font-size:120%;
+			font-weight:bold;
+			color:#888;
+			background-color:#eee;
+			padding:3px;
+		}
+.checkin_map{
+	margin-top:10px;
+	width:460px;
+	height:300px;
+	border: 2px solid #ccc;
+}
 
-/*--  --*/
-/*--  --*/
+/*
+Button Styles
+*/
+a.button 
+/* button,
+input[type="submit"],
+input[type="reset"],
+input[type="button"] */ {
+	background: #eee; /* Old browsers */
+	
+  border: 1px solid #aaa;
+  border-top: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  padding: 2px 10px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  border-radius: 3px;
+  color: #444;
+  display: inline-block;
+  font-size: 10px;
+  font-weight: bold;
+  text-decoration: none;
+  text-shadow: 0 1px rgba(255, 255, 255, .75);
+  cursor: pointer;
+  margin-bottom: 20px;
+  line-height: 21px;
+  font-family: "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  
+a.button:hover
+/* button:hover,
+input[type="submit"]:hover,
+input[type="reset"]:hover,
+input[type="button"]:hover */ {
+	color: #222;
+	background: #eee; /* Old browsers */
+	
+  border: 1px solid #888;
+  border-top: 1px solid #aaa;
+  border-left: 1px solid #aaa; }
+  
+.badge {
+	float:left;
+	width:100px;
+	text-align:center;
+	background-color:#E9E9E9;
+	-moz-border-radius:5px;
+	border-radius:5px;
+	padding:5px;
+	margin:0px 5px;
+}
+
+/* jquery datePicker CSS */
+
+
+table.jCalendar {
+	border: 1px solid #000;
+	background: #aaa;
+    border-collapse: separate;
+    border-spacing: 2px;
+}
+table.jCalendar th {
+	background: #333;
+	color: #fff;
+	font-weight: bold;
+	padding: 3px 5px;
+}
+
+table.jCalendar td {
+	background: #ccc;
+	color: #000;
+	padding: 3px 5px;
+	text-align: center;
+}
+table.jCalendar td.other-month {
+	background: #ddd;
+	color: #aaa;
+}
+table.jCalendar td.today {
+	background: #666;
+	color: #fff;
+}
+table.jCalendar td.selected {
+	background: #f66;
+	color: #fff;
+}
+table.jCalendar td.selected.dp-hover {
+	background: #f33;
+	color: #fff;
+}
+table.jCalendar td.dp-hover,
+table.jCalendar tr.activeWeekHover td {
+	background: #fff;
+	color: #000;
+}
+table.jCalendar tr.selectedWeek td {
+	background: #f66;
+	color: #fff;
+}
+table.jCalendar td.disabled, table.jCalendar td.disabled.dp-hover {
+	background: #bbb;
+	color: #888;
+}
+table.jCalendar td.unselectable,
+table.jCalendar td.unselectable:hover,
+table.jCalendar td.unselectable.dp-hover {
+	background: #bbb;
+	color: #888;
+}
+
+/* For the popup */
+
+/* NOTE - you will probably want to style a.dp-choose-date - see how I did it in demo.css */
+
+div.dp-popup {
+	position: relative;
+	background: #ccc;
+	font-size: 10px;
+	font-family: arial, sans-serif;
+	padding: 2px;
+	width: 171px;
+	line-height: 1.2em;
+}
+div#dp-popup {
+	position: absolute;
+	z-index: 199;
+}
+div.dp-popup h2 {
+	font-size: 12px;
+	text-align: center;
+	margin: 2px 0;
+	padding: 0;
+}
+a#dp-close {
+	font-size: 11px;
+	padding: 4px 0;
+	text-align: center;
+	display: block;
+}
+a#dp-close:hover {
+	text-decoration: underline;
+}
+div.dp-popup a {
+	color: #000;
+	text-decoration: none;
+	padding: 3px 2px 0;
+}
+div.dp-popup div.dp-nav-prev {
+	position: absolute;
+	top: 2px;
+	left: 4px;
+	width: 100px;
+}
+div.dp-popup div.dp-nav-prev a {
+	float: left;
+}
+/* Opera needs the rules to be this specific otherwise it doesn't change the cursor back to pointer after you have disabled and re-enabled a link */
+div.dp-popup div.dp-nav-prev a, div.dp-popup div.dp-nav-next a {
+	cursor: pointer;
+}
+div.dp-popup div.dp-nav-prev a.disabled, div.dp-popup div.dp-nav-next a.disabled {
+	cursor: default;
+}
+div.dp-popup div.dp-nav-next {
+	position: absolute;
+	top: 2px;
+	right: 4px;
+	width: 100px;
+}
+div.dp-popup div.dp-nav-next a {
+	float: right;
+}
+div.dp-popup a.disabled {
+	cursor: default;
+	color: #aaa;
+}
+div.dp-popup td {
+	cursor: pointer;
+}
+div.dp-popup td.disabled {
+	cursor: default;
+}
+.transparent-25 {
+  /* IE 8 */
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=25)";
+
+  /* IE 5-7 */
+  filter: alpha(opacity=25);
+
+  /* Netscape */
+  -moz-opacity: 0.25;
+
+  /* Safari 1.x */
+  -khtml-opacity: 0.25;
+
+  /* Good browsers */
+  opacity: 0.25;
+}
+.transparent-50 {
+  /* IE 8 */
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+
+  /* IE 5-7 */
+  filter: alpha(opacity=50);
+
+  /* Netscape */
+  -moz-opacity: 0.5;
+
+  /* Safari 1.x */
+  -khtml-opacity: 0.5;
+
+  /* Good browsers */
+  opacity: 0.5;
+}
+.transparent-75 {
+  /* IE 8 */
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=75)";
+
+  /* IE 5-7 */
+  filter: alpha(opacity=75);
+
+  /* Netscape */
+  -moz-opacity: 0.75;
+
+  /* Safari 1.x */
+  -khtml-opacity: 0.75;
+
+  /* Good browsers */
+  opacity: 0.75;
+}
+
+/* Swatch style */
+.swatch {
+	width: 30px;
+	height: 30px;
+	display: inline-block;
+}

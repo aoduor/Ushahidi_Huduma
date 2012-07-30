@@ -18,657 +18,761 @@
  */
 
 class Incidents_Api_Object extends Api_Object_Core {
+	/**
+	 * Record sorting order ASC or DESC
+	 * @var string
+	 */
+	private $sort;
 
-    private $sort; // Sort descriptor ASC or DESC
-    private $order_field; // Column name by which to order the records    
-    
-    public function __construct($api_service)
-    {
-        parent::__construct($api_service);
-    }
-    
-    /**
-     * Implementation of abstract method in parent
-     *
-     * Handles the API task parameters
-     */
-    public function perform_task()
-    {
-        // Check if the 'by' parameter has been specified
-        if ( ! $this->api_service->verify_array_index($this->request, 'by'))
-        {
-            // Set "all" as the default method for fetching incidents
-            $this->by = 'all';
-        }
-        else
-        {
-            $this->by = $this->request['by'];
-        }
+	/**
+	 * Column name by which to order the records
+	 * @var string
+	 */
+	private $order_field;
 
-        // Check optional parameters
-        $this->_check_optional_parameters();
-        
-        // Begin task switching
-        switch ($this->by)
-        {
-            // Get all incidents
-            case "all":
-                $this->response_data = $this->get_incidents_by_all();
-            break;
-            
-            // Get specific incident by ID
-            case "incidentid":
-                if ( ! $this->api_service->verify_array_index($this->request, 'id'))
-                {
-                    $this->set_error_message(array(
-                        "error" => $this->api_service->get_error_msg(001, 'id')
-                    ));
-                    
-                    return;
-                }
-                else
-                {
-                    $this->response_data = $this->_get_incident_by_id(
-                            $this->check_id_value($this->request['id']));
-                }
-            break;
-            
-            // Get incidents by latitude and longitude
-            case "latlon":
-                if ($this->api_service->verify_array_index($this->request, 'latitude')
-                    AND $this->api_service->verify_array_index($this->request, 'longitude'))
-                { 
-                    $this->response_data = $this->_get_incidents_by_lat_lon(
-                        $this->check_id_value($this->request['latitude']),
-                        $this->check_id_value($this->request['longitude']));
-                }
-                else
-                {
-                    $this->set_error_message(array(
-                        "error" => $this->api_service->get_error_msg(001, 'latitude or longitude')
-                    ));
-                    
-                    return;
-                }
-            break;
-            
-            // Get incidents by location id
-            case "locid":
-                if ( ! $this->api_service->verify_array_index($this->request, 'id'))
-                {
-                    $this->set_error_message(array(
-                        "error" => $this->api_service->get_error_msg(001, 'id')
-                    ));
-                    
-                    return;
-                }
-                else
-                {
-                    $this->response_data = $this->_get_incidents_by_location_id($this->check_id_value($this->request['id']));
-                }
-            break;
-            
-            // Get incidents by location name
-            case "locname":
-                if ( ! $this->api_service->verify_array_index($this->request, 'name'))
-                {
-                    $this->set_error_message(array(
-                        "error" => $this->api_service->get_error_msg(001, 'name') 
-                    ));
-                    
-                    return;
-                }
-                else
-                {
-                    $this->response_data = $this->_get_incidents_by_location_name($this->request['name']);
-                }
-            break;
-            
-            // Get incidents by category id
-            case "catid":
-                if ( ! $this->api_service->verify_array_index($this->request, 'id'))
-                {
-                    $this->set_error_message(array(
-                        "error" => $this->api_service->get_error_msg(001, 'id')
-                    ));
-                    
-                    return;
-                }
-                else
-                {
-                    $this->response_data = $this->_get_incidents_by_category_id($this->check_id_value($this->request['id']));
-                }
-            break;
-            
-            // Get incidents by category name
-            case "catname":
-                if ( ! $this->api_service->verify_array_index($this->request, 'name'))
-                {
-                    $this->set_error_message(array(
-                        "error" => $this->api_service->get_error_msg(001, 'name')
-                    ));
-                    return;
-                }
-                else
-                {
-                    $this->response_data = $this->_get_incidents_by_category_name($this->request['name']);
-                }
-            break;
-            
-            // Get incidents greater than a specific incident_id in the DB
-            case "sinceid":
-                if ( ! $this->api_service->verify_array_index($this->request, 'id'))
-                {
-                    $this->set_error_message(array(
-                        "error" => $this->api_service->get_error_msg(001, 'id')
-                    ));
-                    
-                    return;
-                }
-                else
-                {
-                    $this->response_data = $this->_get_incidents_by_since_id($this->check_id_value($this->request['id']));
-                }
-            break;
-            
-            // Get incidents less that a specific incident_id
-            case "maxid":
-                if ( ! $this->api_service->verify_array_index($this->request, 'id'))
-                {
-                    $this->set_error_message(array(
-                        "error" => $this->api_service->get_error_msg(001, 'id')
-                    ));
-                    
-                    return;
-                }
-                else
-                {
-                    $this->response_data = $this->_get_incidents_by_max_id($this->check_id_value($this->request['id']));
-                }
-            break;
-            
-            // Get incidents based on a box using two lat,lon coords
-            case "bounds":
-                $this->response_data = $this->_get_incidents_by_bounds($this->request['sw'],$this->request['ne'],$this->request['c']);
-            break;
-            
-            // Error therefore set error message 
-            default:
-                $this->set_error_message(array(
-                    "error" => $this->api_service->get_error_msg(002)
-                ));
-        }
-    }
+	/**
+	 * Should the response include comments
+	 * @var string
+	 */
+	private $comments;
 
-    /**
-     * Checks for optional parameters in the request and sets the values
-     * in the respective class members
-     */
-    private function _check_optional_parameters()
-    {
-        // Check if the sort parameter has been specified
-        if ($this->api_service->verify_array_index($this->request, 'sort'))
-        {
-            $this->sort = ($this->request['sort'] == '0') ? 'ASC' : 'DESC';
-        }
-        else
-        {
-            $this->sort = 'DESC';
-        }
-        
-        // Check if the limit parameter has been specified
-        if ($this->api_service->verify_array_index($this->request, 'limit'))
-        {
-            $this->set_list_limit($this->request['limit']);
-        }               
-        
-        // Check if the orderfield parameter has been specified
-        if ($this->api_service->verify_array_index($this->request, 'orderfield'))
-        {
-            switch ($this->request['orderfield'])
-            {
-                case "incidentid":
-                    $this->order_field = 'i.id';
-                break;
-                
-                case "locationid":
-                    $this->order_field = 'i.location_id';
-                break;
-                
-                case "incidentdate":
-                    $this->order_field = 'i.incident_date';
-                break;
-                
-                default:
-                    $this->order_field = 'i.incident_date';
-            }
-        }
-        else
-        {
-            $this->order_field = 'i.incident_date';
-        }
-    }
-    
-    /**
-     * Generic function to get reports by given set of parameters
-     */
-    public function _get_incidents($where = '',$limit = '')
-    {
-        $ret_json_or_xml = ''; // Will hold the XML/JSON string to return
-        
-        $json_reports = array();
-        $json_report_media = array();
-        $json_report_categories = array();
-        $json_incident_media = array();
-        $upload_path = str_replace("media/uploads/", "", Kohana::config('upload.relative_directory')."/");        
-        //XML elements
-        $xml = new XmlWriter();
-        $xml->openMemory();
-        $xml->startDocument('1.0', 'UTF-8');
-        $xml->startElement('response');
-        $xml->startElement('payload');
-        $xml->writeElement('domain',$this->domain);
-        $xml->startElement('incidents');
+	/**
+	 * Constructor
+	 */
+	public function __construct($api_service)
+	{
+		parent::__construct($api_service);
+	}
 
-        // Find incidents
-        $this->query = "SELECT i.id AS incidentid,
-                i.incident_title AS incidenttitle,"
-                ."i.incident_description AS incidentdescription, "
-                ."i.incident_date AS incidentdate, "
-                ."i.incident_mode AS incidentmode, "
-                ."i.incident_active AS incidentactive, "
-                ."i.incident_verified AS incidentverified, "
-                ."l.id AS locationid, "
-                ."l.location_name AS locationname, "
-                ."l.latitude AS locationlatitude, "
-                ."l.longitude AS locationlongitude "
-                ."FROM ".$this->table_prefix."incident AS i "
-                ."INNER JOIN ".$this->table_prefix.
-                "location as l on l.id = i.location_id "."$where $limit";
+	/**
+	 * Implementation of abstract method in parent
+	 *
+	 * Handles the API task parameters
+	 */
+	public function perform_task()
+	{
+		// Check if the 'by' parameter has been specified
+		if ( ! $this->api_service->verify_array_index($this->request, 'by'))
+		{
+			// Set "all" as the default method for fetching incidents
+			$this->by = 'all';
+		}
+		else
+		{
+			$this->by = $this->request['by'];
+		}
 
-        $items = $this->db->query($this->query);
-        
-        // Set the no. of records returned
-        $this->record_count = $items->count();
-        
-        $i = 0;
-        
-        //No record found.
-        if ($items->count() == 0)
-        {
-            return $this->response(4, $this->error_messages);
-        }
+		// Check optional parameters
+		$this->_check_optional_parameters();
 
-        foreach ($items as $item)
-        {
-            // Build xml file
-            $xml->startElement('incident');
+		// Begin task switching
+		switch ($this->by)
+		{
+			// Get all incidents
+			case "all":
+				$this->response_data = $this->_get_incidents();
+			break;
 
-            $xml->writeElement('id',$item->incidentid);
-            $xml->writeElement('title',$item->incidenttitle);
-            $xml->writeElement('description',$item->incidentdescription);
-            $xml->writeElement('date',$item->incidentdate);
-            $xml->writeElement('mode',$item->incidentmode);
-            $xml->writeElement('active',$item->incidentactive);
-            $xml->writeElement('verified',$item->incidentverified);
-            $xml->startElement('location');
-            $xml->writeElement('id',$item->locationid);
-            $xml->writeElement('name',$item->locationname);
-            $xml->writeElement('latitude',$item->locationlatitude);
-            $xml->writeElement('longitude',$item->locationlongitude);
-            $xml->endElement();
-            $xml->startElement('categories');
+			// Get specific incident by ID
+			case "incidentid":
+				if ( ! $this->api_service->verify_array_index($this->request, 'id'))
+				{
+					$this->set_error_message(array(
+						"error" => $this->api_service->get_error_msg(001, 'id')
+					));
 
-            // Fetch categories
-            $this->query = " SELECT c.category_title AS categorytitle, 
-                c.id AS cid " . "FROM ".$this->table_prefix.
-                "category AS c INNER JOIN ".
-                $this->table_prefix."incident_category AS ic ON " .
-                "ic.category_id = c.id WHERE ic.incident_id =".
-                $item->incidentid;
+					return;
+				}
+				else
+				{
+					$params = array('i.id = '.$this->check_id_value($this->request['id']));
+					$this->response_data = $this->_get_incidents($params);
+				}
+			break;
 
-            $category_items = $this->db->query( $this->query );
-            $json_report_categories[$item->incidentid] = array();           
-            foreach ($category_items as $category_item)
-            {
-                if ($this->response_type == 'json')
-                {
-                    $json_report_categories[$item->incidentid][] = array(
-                            "category"=> array(
-                                "id" => $category_item->cid,
-                                "title" => $category_item->categorytitle
-                            )
-                        );
-                } 
-                else 
-                {
-                    $xml->startElement('category');
-                    $xml->writeElement('id',$category_item->cid);
-                    $xml->writeElement('title', $category_item->categorytitle );
-                    $xml->endElement();
-                }
-                
-            }
-
-            $xml->endElement();//end categories
-
-            //fetch media associated with an incident
-            $this->query = "SELECT m.id as mediaid, m.media_title AS 
-                mediatitle, " .
-                "m.media_type AS mediatype, m.media_link AS medialink, " .
-                "m.media_thumb AS mediathumb FROM ".$this->table_prefix.
-                "media AS m " . "INNER JOIN ".$this->table_prefix.
-                "incident AS i ON i.id = m.incident_id " .
-                "WHERE i.id =". $item->incidentid;
-
-            $media_items = $this->db->query($this->query);
-            $json_report_media[$item->incidentid] = array();
-
-            if (count($media_items) > 0)
-            {
-                $xml->startElement('mediaItems');
-
-                foreach ($media_items as $media_item)
-                {
-	                if ($media_item->mediatype != 1)
+			// Get incidents by latitude and longitude
+			case "latlon":
+				if ($this->api_service->verify_array_index($this->request, 'latitude')
+					AND $this->api_service->verify_array_index($this->request, 'longitude'))
+				{
+					// Build out the parameters
+					$lat = $this->check_cordinate_value($this->request['latitude']);
+					$lon = $this->check_cordinate_value($this->request['longitude']);
+					$params = array(
+						'l.latitude = '.$this->request['latitude'],
+						'l.longitude = '.$this->request['longitude']
+					);
+					if ($lat==0 or $lon==0)
 					{
-                        $upload_path = "";
-                    }
+						$this->set_error_message(array(
+							"error" => $this->api_service->get_error_msg(001, 'invalid latitude or longitude values')
+						));
+						
+						return;
+					}
+					else
+					{
+						if(isset($this->request['radius']))
+						{
+							$rad = $this->check_id_value($this->request['radius']);
+							//we take this to be radius of the earth, this sems to be more efficient than perming them directly at the query level
+							$R = 6371;
+							$maxLat = $lat + rad2deg($rad/$R);
+							$minLat = $lat - rad2deg($rad/$R);
+							// compensate for degrees longitude getting smaller with increasing latitude
+							$maxLon = $lon + rad2deg($rad/$R/cos(deg2rad($lat)));
+							$minLon = $lon - rad2deg($rad/$R/cos(deg2rad($lat)));
+							$params = array(
+								'l.latitude > '.$minLat,
+								'l.latitude < '.$maxLat,
+								'l.longitude > '.$minLon,
+								'l.longitude < '.$maxLon
+							);
+						}
+						$this->response_data = $this->_get_incidents($params);
+					}
+				}
+				else
+				{
+					$this->set_error_message(array(
+						"error" => $this->api_service->get_error_msg(001, 'latitude or longitude')
+					));
 
-					$url_prefix = url::base().Kohana::config('upload.relative_directory').'/';
-                    if($this->response_type == 'json')
-                    {
-                        $json_report_media[$item->incidentid][] = array(
-                            "id" => $media_item->mediaid,
-                            "type" => $media_item->mediatype,
-                            "link" => $upload_path.$media_item->medialink,
-                            "thumb" => $upload_path.$media_item->mediathumb,
-                        );
+					return;
+				}
+			break;
 
-                        // If we are look at certain types of media, add some fields
-                        if($media_item->mediatype == 1)
-                        {
-                        	// Grab that last key up there
-                        	$add_to_key = key($json_report_media[$item->incidentid]) + 1;
+			// Get incidents by location id
+			case "locid":
+				if ( ! $this->api_service->verify_array_index($this->request, 'id'))
+				{
+					$this->set_error_message(array(
+						"error" => $this->api_service->get_error_msg(001, 'id')
+					));
 
-                        	// Give a full absolute URL to the image 
-                        	$json_report_media[$item->incidentid][$add_to_key]["thumb_url"] = 
-                        		$url_prefix.$upload_path.$media_item->mediathumb;
+					return;
+				}
+				else
+				{
+					$params = array(
+						'i.location_id = '.$this->check_id_value($this->request['id'])
+					);
 
-                        	$json_report_media[$item->incidentid][$add_to_key]["link_url"] = 
-                        		$url_prefix.$upload_path.$media_item->medialink;
-                        }
-                    } 
-                    else 
-                    {
-                        $xml->startElement('media');
+					$this->response_data = $this->_get_incidents($params);
+				}
+			break;
 
-                        if( $media_item->mediaid != "" )
-                        {
-                            $xml->writeElement('id',$media_item->mediaid);
-                        }
+			// Get incidents by location name
+			case "locname":
+				if ( ! $this->api_service->verify_array_index($this->request, 'name'))
+				{
+					$this->set_error_message(array(
+						"error" => $this->api_service->get_error_msg(001, 'name')
+					));
 
-                        if( $media_item->mediatitle != "" )
-                        {
-                            $xml->writeElement('title',
-                                $media_item->mediatitle);
-                        }
+					return;
+				}
+				else
+				{
+					$params = array(
+						'l.location_name = "'.$this->request['name'].'"'
+					);
 
-                        if( $media_item->mediatype != "" )
-                        {
-                            $xml->writeElement('type',
-                                $media_item->mediatype);
-                        }
+					$this->response_data = $this->_get_incidents($params);
+				}
+			break;
 
-                        if( $media_item->medialink != "" ) 
-                        {
-                            $xml->writeElement('link',
-                                $upload_path.$media_item->medialink);
-                        }
+			// Get incidents by category id
+			case "catid":
+				if ( ! $this->api_service->verify_array_index($this->request, 'id'))
+				{
+					$this->set_error_message(array(
+						"error" => $this->api_service->get_error_msg(001, 'id')
+					));
 
-                        if( $media_item->mediathumb != "" ) 
-                        {
-                            $xml->writeElement('thumb',
-                                $upload_path.$media_item->mediathumb);
-                        }
+					return;
+				}
+				else
+				{
+					$category_id = $this->check_id_value($this->request['id']);
+					$params = array(
+						'c.id = '.$category_id,
+						'c.category_visible = 1'
+					);
 
-                        if( $media_item->mediathumb != "" AND $media_item->mediatype == 1 )
-                        {
-                        	$add_to_key = key($json_report_media[$item->incidentid]) + 1;
-                        	$xml->writeElement('thumb_url',
-                                $url_prefix.$upload_path.$media_item->mediathumb);
+					$this->response_data = $this->_get_incidents($params);
+				}
+			break;
 
-                            $xml->writeElement('link_url',
-                                $url_prefix.$upload_path.$media_item->medialink);
-                        }
+			// Get incidents by category name
+			case "catname":
+				if ( ! $this->api_service->verify_array_index($this->request, 'name'))
+				{
+					$this->set_error_message(array(
+						"error" => $this->api_service->get_error_msg(001, 'name')
+					));
+					return;
+				}
+				else
+				{
+					$params = array(
+						'c.category_title LIKE "%'.$this->request['name'].'%"',
+						'c.category_visible = 1'
+					);
 
-                        $xml->endElement();
-                    }
-                }
+					$this->response_data = $this->_get_incidents($params);
+				}
+			break;
 
-                $xml->endElement(); // media
+			// Get the number of reports in each category
+			case "catcount":
+				$this->response_data = $this->_get_incident_counts_per_category();
+			break;
 
-            }
+			// Get incidents greater than a specific incident_id in the DB
+			case "sinceid":
+				if ( ! $this->api_service->verify_array_index($this->request, 'id'))
+				{
+					$this->set_error_message(array(
+						"error" => $this->api_service->get_error_msg(001, 'id')
+					));
 
-            $xml->endElement(); // end incident
+					return;
+				}
+				else
+				{
+					$params = array(
+						'i.id > '.$this->check_id_value($this->request['id'])
+					);
 
-            //needs different treatment depending on the output
-            if ($this->response_type == 'json')
-            {
-                $json_reports[] = array(
-                    "incident" => $item, 
-                    "categories" => $json_report_categories[$item->incidentid], 
-                    "media" => $json_report_media[$item->incidentid]
-                );
-            }
-        }
+					$this->response_data = $this->_get_incidents($params);
+				}
+			break;
 
-        //create the json array
-        $data = array(
-            "payload" => array(
-                "domain" => $this->domain,
-                "incidents" => $json_reports
-            ),
-            "error" => $this->api_service->get_error_msg(0)
-        );
+			// Get incidents less that a specific incident_id
+			case "maxid":
+				if ( ! $this->api_service->verify_array_index($this->request, 'id'))
+				{
+					$this->set_error_message(array(
+						"error" => $this->api_service->get_error_msg(001, 'id')
+					));
 
-        if ($this->response_type == 'json')
-        {
-            $ret_json_or_xml = $this->array_as_json($data);
-            
-            return $ret_json_or_xml;
-        } 
-        else 
-        {
-            $xml->endElement(); //end incidents
-            $xml->endElement(); // end payload
-            $xml->startElement('error');
-            $xml->writeElement('code',0);
-            $xml->writeElement('message','No Error');
-            $xml->endElement();//end error
-            $xml->endElement(); // end response
-            return $xml->outputMemory(true);
-        }
+					return;
+				}
+				else
+				{
+					$params = array(
+						'i.id < '.$this->check_id_value($this->request['id'])
+					);
 
-    }
+					$this->response_data = $this->_get_incidents($params);
+				}
+			break;
 
-    /**
-     * Fetch all incidents
-     * 
-     * @param string orderfield - the order in which to order query output
-     * @param string sort
-     */
-    private function get_incidents_by_all() 
-    {
-        $where = "\nWHERE i.incident_active = 1 ";
-        
-        $sortby = "\nGROUP BY i.id ORDER BY $this->order_field $this->sort";
-        
-        $limit = "\nLIMIT 0, $this->list_limit";
+			// Get incidents based on a box using two lat,lon coords
+			case "bounds":
+				$c = isset($this->request['c']) ? $this->request['c'] : 0;
+				$this->response_data = $this->_get_incidents_by_bounds($this->request['sw'],$this->request['ne'],$c);
+			break;
 
-        /* Not elegant but works */
-        return $this->_get_incidents($where.$sortby, $limit);
-    }
-    
-    /**
-     * Get the incidents by latitude and longitude.
-     * 
-     */
-    private function _get_incidents_by_lat_lon($lat, $long)
-    {
-        
-        $where = "\nWHERE l.latitude = $lat AND l.longitude = $long AND 
-            i.incident_active = 1 ";
-        
-        $sortby = "\nORDER BY $this->order_field $this->sort ";
-        
-        $limit = "\n LIMIT 0, $this->list_limit";
-        
-        return $this->_get_incidents($where.$sortby, $limit);
-    }
+			// Error therefore set error message
+			default:
+				$this->set_error_message(array(
+					"error" => $this->api_service->get_error_msg(002)
+				));
+		}
+	}
 
-    /**
-     * Get the incidents by location id
-     */
-    private function _get_incidents_by_location_id($locid)
-    {
-        $where = "\nWHERE i.location_id = $locid AND i.incident_active = 1 ";
-        
-        $sortby = "\nGROUP BY i.id ORDER BY $this->order_field $this->sort";
-        
-        $limit = "\nLIMIT 0, $this->list_limit";
-        
-        return $this->_get_incidents($where.$sortby, $limit);
-    }
+	/**
+	 * Checks for optional parameters in the request and sets the values
+	 * in the respective class members
+	 */
+	private function _check_optional_parameters()
+	{
+		// Check if the sort parameter has been specified
+		if ($this->api_service->verify_array_index($this->request, 'sort'))
+		{
+			$this->sort = ($this->request['sort'] == '0') ? 'ASC' : 'DESC';
+		}
+		else
+		{
+			$this->sort = 'DESC';
+		}
 
-    /**
-     * Get the incidents by location name
-     */
-    private function _get_incidents_by_location_name($locname)
-    {
-        $where = "\nWHERE l.location_name = '$locname' AND
-                i.incident_active = 1 ";
-        
-        $sortby = "\nGROUP BY i.id ORDER BY $this->order_field $this->sort";
-        
-        $limit = "\nLIMIT 0, $this->list_limit";
-        
-        return $this->_get_incidents($where.$sortby, $limit);
-    }
+		// Check if the limit parameter has been specified
+		if ($this->api_service->verify_array_index($this->request, 'limit'))
+		{
+			$this->set_list_limit($this->request['limit']);
+		}
 
-    /**
-     * Get the incidents by category id
-     */
-    private function _get_incidents_by_category_id($catid)
-    {
-        // Needs Extra Join
-        $join = "\nINNER JOIN ".$this->table_prefix."incident_category AS 
-            ic ON ic.incident_id = i.id";
-        
-        $join .= "\nINNER JOIN ".$this->table_prefix."category AS c ON 
-            c.id = ic.category_id ";
-        
-        $where = $join."\nWHERE c.id = $catid AND i.incident_active = 1";
-        
-        $sortby = "\nORDER BY $this->order_field $this->sort";
-        
-        $limit = "\nLIMIT 0, $this->list_limit";
-        
-        return $this->_get_incidents($where.$sortby, $limit);
-    }
+		// Check if the orderfield parameter has been specified
+		if ($this->api_service->verify_array_index($this->request, 'orderfield'))
+		{
+			switch ($this->request['orderfield'])
+			{
+				case "incidentid":
+					$this->order_field = 'i.id';
+				break;
 
-    /**
-     * Get the incidents by category name
-     */
-    private function _get_incidents_by_category_name($catname)
-    {
-        // Needs Extra Join
-        $join = "\nINNER JOIN ".$this->table_prefix."incident_category AS 
-            ic ON ic.incident_id = i.id";
+				case "locationid":
+					$this->order_field = 'i.location_id';
+				break;
 
-        $join .= "\nINNER JOIN ".$this->table_prefix."category AS c ON 
-            c.id = ic.category_id";
-        
-        $where = $join."\nWHERE c.category_title LIKE '%$catname%' AND
-                i.incident_active = 1";
-        
-        $sortby = "\nORDER BY $this->order_field $this->sort";
-        
-        $limit = "\nLIMIT 0, $this->list_limit";
-        
-        return $this->_get_incidents($where.$sortby, $limit);
-    }
-    
-    /**
-     * Get a single incident by its ID in the database
-     * @param incident_id ID of the incident in the databases
-     */
-    private function _get_incident_by_id($incident_id)
-    {
-        $where = "\nWHERE i.id = $incident_id AND i.incident_active = 1 ";
-        
-        return $this->_get_incidents($where);
-    }
+				case "incidentdate":
+					$this->order_field = 'i.incident_date';
+				break;
 
-    /**
-     * Get the incidents by since an incidents was updated
-     *
-     * @param since_id Database id from which incidents are to be fetched
-     */
-    private function _get_incidents_by_since_id($since_id)
-    {
-        // Needs Extra Join
-        $join = "\nINNER JOIN ".$this->table_prefix."incident_category AS 
-            ic ON ic.incident_id = i.id";
-            
-        $join .= "\nINNER JOIN ".$this->table_prefix.
-            "category AS c ON c.id = ic.category_id";
-            
-        $where = $join."\nWHERE i.id > $since_id AND
-                i.incident_active = 1";
-                
-        $sortby = "\nGROUP BY i.id ORDER BY $this->order_field $this->sort";
-        $limit = "\nLIMIT 0, $this->list_limit";
-        
-        return $this->_get_incidents($where.$sortby, $limit);
-    }
-    
-    /**
-     * Get incidents with a database id less than then one specified in $max_id
-     *
-     * @param max_id Maximum incident id
-     */
-    private function _get_incidents_by_max_id($max_id)
-    {
-        // Needs Extra Join
-        $join = "\nINNER JOIN ".$this->table_prefix."incident_category AS 
-            ic ON ic.incident_id = i.id";
-            
-        $join .= "\nINNER JOIN ".$this->table_prefix.
-            "category AS c ON c.id = ic.category_id";
-            
-        $where = $join."\nWHERE i.id < $max_id AND
-                i.incident_active = 1";
-                
-        $sortby = "\nGROUP BY i.id ORDER BY $this->order_field $this->sort";
-        $limit = "\nLIMIT 0, $this->list_limit";
-        
-        return $this->_get_incidents($where.$sortby, $limit);
-        
-    }
-    
-    /**
-     * Get incidents within a certain lat,lon bounding box
-     *
-     * @param sw is the southwest lat,lon of the box
-     * @param ne is the northeast lat,lon of the box
-     * @param c is the categoryid
-     */
-    private function _get_incidents_by_bounds($sw,$ne,$c=NULL)
-    {
-		// Get location_ids if we are to filter by location
-		$location_ids = array();
+				default:
+					$this->order_field = 'i.incident_date';
+			}
+		}
+		else
+		{
+			$this->order_field = 'i.incident_date';
+		}
 
+
+		// Check if the 'comments' parameter has been specified
+		if ( ! $this->api_service->verify_array_index($this->request, 'comments'))
+		{
+			// Default to not including comments
+			$this->comments = 0;
+		}
+		else
+		{
+			$this->comments = $this->request['comments'];
+		}
+	}
+
+	/**
+	 * Generic function to get reports by given set of parameters
+	 *
+	 * @param string $where SQL where clause
+	 * @param int $limit No. of records to return - set to 20 by default
+	 * @return string XML or JSON string
+	 */
+	public function _get_incidents($where = array())
+	{
+		// STEP 1.
+		// Get the incidents
+		$items = Incident_Model::get_incidents($where, $this->list_limit, $this->order_field, $this->sort);
+
+		//No record found.
+		if ($items->count() == 0)
+		{
+			return $this->response(4, $this->error_messages);
+		}
+
+		// Records found - proceed
+
+		// Set the no. of records returned
+		$this->record_count = $items->count();
+
+		// Will hold the XML/JSON string to return
+		$ret_json_or_xml = '';
+
+		$json_reports = array();
+		$json_report_media = array();
+		$json_report_categories = array();
+		$json_incident_media = array();
+		$upload_path = str_replace("media/uploads/", "", Kohana::config('upload.relative_directory')."/");
+
+		//XML elements
+		$xml = new XmlWriter();
+		$xml->openMemory();
+		$xml->startDocument('1.0', 'UTF-8');
+		$xml->startElement('response');
+		$xml->startElement('payload');
+		$xml->writeElement('domain',$this->domain);
+		$xml->startElement('incidents');
+
+		// Records found, proceed
+		// Store the incident ids
+		$incidents_ids = array();
+		foreach ($items as $item)
+		{
+			$incident_ids[] = $item->incident_id;
+		}
+
+		//
+		// STEP 2.
+		// Fetch the incident categories
+		//
+		$this->query = "SELECT c.category_title AS categorytitle, ic.incident_id, "
+					. "c.id AS cid "
+					. "FROM ".$this->table_prefix."category AS c "
+					. "INNER JOIN ". $this->table_prefix."incident_category AS ic ON ic.category_id = c.id "
+					. "WHERE ic.incident_id IN (".implode(',', $incident_ids).")";
+
+		// Execute the query
+		$incident_categories = $this->db->query($this->query);
+
+		// To hold the incident category items
+		$category_items = array();
+
+		// Temporary counter
+		$i = 1;
+
+		// Fetch items into array
+		foreach ($incident_categories as $incident_category)
+		{
+			$category_items[$incident_category->incident_id][$i]['cid'] = $incident_category->cid;
+			$category_items[$incident_category->incident_id][$i]['categorytitle'] = $incident_category->categorytitle;
+			$i++;
+		}
+
+		// Free temporary variables from memory
+		unset ($incident_categories);
+
+		//
+		// STEP 3.
+		// Fetch the media associated with all the incidents
+		//
+		$this->query = "SELECT i.id AS incident_id, m.id AS mediaid, m.media_title AS mediatitle, "
+					. "m.media_type AS mediatype, m.media_link AS medialink, m.media_thumb AS mediathumb "
+					. "FROM ".$this->table_prefix."media AS m "
+					. "INNER JOIN ".$this->table_prefix."incident AS i ON i.id = m.incident_id "
+					. "WHERE i.id IN (".implode(",", $incident_ids).")";
+
+		$media_items_result = $this->db->query($this->query);
+
+		// To store the fetched media items
+		$media_items = array();
+
+		// Reset the temporary counter
+		$i = 1;
+
+		// Fetch items into array
+		foreach ($media_items_result as $media_item)
+		{
+			$media_items[$media_item->incident_id][$i]['mediaid'] = $media_item->mediaid;
+			$media_items[$media_item->incident_id][$i]['mediatitle'] = $media_item->mediatitle;
+			$media_items[$media_item->incident_id][$i]['mediatype'] = $media_item->mediatype;
+			$media_items[$media_item->incident_id][$i]['medialink'] = $media_item->medialink;
+			$media_items[$media_item->incident_id][$i]['mediathumb'] = $media_item->mediathumb;
+			$i++;
+		}
+
+		// Free temporary variables
+		unset ($media_items_result, $i);
+
+		//
+		// STEP 4.
+		// Fetch the comments associated with the incidents
+		//
+		if ($this->comments) {
+			$this->query = "SELECT id, incident_id, comment_author, comment_email, "
+						. "comment_description, comment_date "
+						. "FROM ".$this->table_prefix."comment AS c "
+						. "WHERE c.incident_id IN (".implode(',', $incident_ids).")";
+
+			// Execute the query
+			$incident_comments = $this->db->query($this->query);
+
+			// To hold the incident category items
+			$comment_items = array();
+
+			// Temporary counter
+			$i = 1;
+
+			// Fetch items into array
+			foreach ($incident_comments as $incident_comment)
+			{
+				$comment_items[$incident_comment->incident_id][$i]['id'] = $incident_comment->id;
+				$comment_items[$incident_comment->incident_id][$i]['incident_id'] = $incident_comment->incident_id;
+				$comment_items[$incident_comment->incident_id][$i]['comment_author'] = $incident_comment->comment_author;
+				$comment_items[$incident_comment->incident_id][$i]['comment_email'] = $incident_comment->comment_email;
+				$comment_items[$incident_comment->incident_id][$i]['comment_description'] = $incident_comment->comment_description;
+				$comment_items[$incident_comment->incident_id][$i]['comment_date'] = $incident_comment->comment_date;
+				$i++;
+			}
+			// Free temporary variables from memory
+			unset ($incident_comments);
+		}
+
+		//
+		// STEP 5.
+		// Return XML
+		//
+		foreach ($items as $item)
+		{
+			// Build xml file
+			$xml->startElement('incident');
+
+			$xml->writeElement('id',$item->incident_id);
+			$xml->writeElement('title',$item->incident_title);
+			$xml->writeElement('description',$item->incident_description);
+			$xml->writeElement('date',$item->incident_date);
+			$xml->writeElement('mode',$item->incident_mode);
+			$xml->writeElement('active',$item->incident_active);
+			$xml->writeElement('verified',$item->incident_verified);
+			$xml->startElement('location');
+			$xml->writeElement('id',$item->location_id);
+			$xml->writeElement('name',$item->location_name);
+			$xml->writeElement('latitude',$item->latitude);
+			$xml->writeElement('longitude',$item->longitude);
+			$xml->endElement();
+			$xml->startElement('categories');
+
+			$json_report_categories[$item->incident_id] = array();
+
+			// Check if the incident id exists
+			if (isset($category_items[$item->incident_id]))
+			{
+				foreach ($category_items[$item->incident_id] as $category_item)
+				{
+					if ($this->response_type == 'json')
+					{
+						$json_report_categories[$item->incident_id][] = array(
+							"category"=> array(
+								"id" => $category_item['cid'],
+								"title" => $category_item['categorytitle']
+							)
+						);
+					}
+					else
+					{
+						$xml->startElement('category');
+						$xml->writeElement('id',$category_item['cid']);
+						$xml->writeElement('title', $category_item['categorytitle'] );
+						$xml->endElement();
+					}
+				}
+			}
+
+			// End categories
+			$xml->endElement();
+
+			$xml->startElement('comments');
+
+			$json_report_comments[$item->incident_id] = array();
+
+			// Check if the incident id exists
+			if (isset($comment_items[$item->incident_id]))
+			{
+				foreach ($comment_items[$item->incident_id] as $comment_item)
+				{
+					if ($this->response_type == 'json')
+					{
+						$json_report_comments[$item->incident_id][] = array(
+							"comment"=> $comment_item
+						);
+					}
+					else
+					{
+						$xml->startElement('comment');
+						$xml->writeElement('id',$comment_item['id']);
+						$xml->writeElement('comment_author',$comment_item['comment_author']);
+						$xml->writeElement('comment_email',$comment_item['comment_email']);
+						$xml->writeElement('comment_description',$comment_item['comment_description']);
+						$xml->writeElement('comment_date',$comment_item['comment_date']);
+						$xml->endElement();
+					}
+				}
+			}
+
+			// End comments
+			$xml->endElement();
+
+			$json_report_media[$item->incident_id] = array();
+
+			if (count($media_items) > 0)
+			{
+				if (isset($media_items[$item->incident_id]) AND count($media_items[$item->incident_id]) > 0)
+				{
+					$xml->startElement('mediaItems');
+
+					foreach ($media_items[$item->incident_id] as $media_item)
+					{
+
+						$url_prefix = url::base().Kohana::config('upload.relative_directory').'/';
+
+						// If our media is not an image, we don't need to show an upload path
+						if ($media_item['mediatype'] != 1)
+						{
+							$upload_path = '';
+						}
+						elseif ($media_item['mediatype'] == 1 AND valid::url($media_item['medialink']) == TRUE)
+						{
+							// If our media is an img and is a valid URL, don't show the upload path or prefix
+							$upload_path = '';
+							$url_prefix = '';
+						}
+
+						if($this->response_type == 'json')
+						{
+							$json_report_media[$item->incident_id][] = array(
+								"id" => $media_item['mediaid'],
+								"type" => $media_item['mediatype'],
+								"link" => $upload_path.$media_item['medialink'],
+								"thumb" => $upload_path.$media_item['mediathumb'],
+							);
+
+							// If we are look at certain types of media, add some fields
+							if($media_item['mediatype'] == 1)
+							{
+								// Grab that last key up there
+								$add_to_key = key($json_report_media[$item->incident_id]) + 1;
+
+								// Give a full absolute URL to the image
+								$json_report_media[$item->incident_id][$add_to_key]["thumb_url"] =  $url_prefix.$upload_path.$media_item['mediathumb'];
+
+								$json_report_media[$item->incident_id][$add_to_key]["link_url"] = $url_prefix.$upload_path.$media_item['medialink'];
+							}
+						}
+						else
+						{
+							$xml->startElement('media');
+
+							if( $media_item['mediaid'] != "" )
+							{
+								$xml->writeElement('id',$media_item['mediaid']);
+							}
+
+							if( $media_item['mediatitle'] != "" )
+							{
+								$xml->writeElement('title', $media_item['mediatitle']);
+							}
+
+							if( $media_item['mediatype'] != "" )
+							{
+								$xml->writeElement('type', $media_item['mediatype']);
+							}
+
+							if( $media_item['medialink'] != "" )
+							{
+								$xml->writeElement('link', $upload_path.$media_item['medialink']);
+							}
+
+							if( $media_item['mediathumb'] != "" )
+							{
+								$xml->writeElement('thumb', $upload_path.$media_item['mediathumb']);
+							}
+
+							if( $media_item['mediathumb'] != "" AND $media_item['mediatype'] == 1 )
+							{
+								$add_to_key = key($json_report_media[$item->incident_id]) + 1;
+
+								$xml->writeElement('thumb_url', $url_prefix.$upload_path.$media_item['mediathumb']);
+
+								$xml->writeElement('link_url', $url_prefix.$upload_path.$media_item['medialink']);
+							}
+							$xml->endElement();
+						}
+					}
+					$xml->endElement(); // Media
+				}
+			}
+
+			$xml->endElement(); // End incident
+
+			// Check for response type
+			if ($this->response_type == 'json')
+			{
+				$json_reports[] = array(
+					"incident" => array(
+						"incidentid" => $item->incident_id,
+						"incidenttitle" => $item->incident_title,
+						"incidentdescription" => $item->incident_description,
+						"incidentdate" => $item->incident_date,
+						"incidentmode" => $item->incident_mode,
+						"incidentactive" => $item->incident_active,
+						"incidentverified" => $item->incident_verified,
+						"locationid" => $item->location_id,
+						"locationname" => $item->location_name,
+						"locationlatitude" => $item->latitude,
+						"locationlongitude" => $item->longitude
+					),
+					"categories" => $json_report_categories[$item->incident_id],
+					"media" => $json_report_media[$item->incident_id],
+					"comments" => $json_report_comments[$item->incident_id]
+				);
+			}
+		}
+
+		// Create the JSON array
+		$data = array(
+			"payload" => array(
+				"domain" => $this->domain,
+				"incidents" => $json_reports
+			),
+			"error" => $this->api_service->get_error_msg(0)
+		);
+
+		if ($this->response_type == 'json')
+		{
+			return $this->array_as_json($data);
+
+		}
+		else
+		{
+			$xml->endElement(); //end incidents
+			$xml->endElement(); // end payload
+			$xml->startElement('error');
+			$xml->writeElement('code',0);
+			$xml->writeElement('message','No Error');
+			$xml->endElement();//end error
+			$xml->endElement(); // end response
+			return $xml->outputMemory(true);
+		}
+	}
+
+	/**
+	 * Returns the number of reports in each category
+	 */
+	private function _get_incident_counts_per_category()
+	{
+		$this->query = 'SELECT category_id, COUNT(category_id) AS reports FROM '.$this->table_prefix.'incident_category '
+					. 'WHERE incident_id IN (SELECT id FROM '.$this->table_prefix.'incident WHERE incident_active = 1) '
+					. 'GROUP BY category_id';
+
+		$items = $this->db->query($this->query);
+
+		$category_counts = array();
+
+		foreach ($items as $item)
+		{
+			$category_counts[] = array('category_id' => $item->category_id, 'reports' => $item->reports);
+		}
+
+		$this->query = 'SELECT COUNT(id) AS total_count FROM '.$this->table_prefix.'incident WHERE incident_active = 1;';
+
+		$count = $this->db->query($this->query);
+
+		foreach($count as $c)
+		{
+			$total_count = $c->total_count;
+			break;
+		}
+
+		//create the json array
+		$data = array(
+			"payload" => array(
+				"domain" => $this->domain,
+				"category_counts" => $category_counts,
+				"total_reports" => $total_count
+			),
+			"error" => $this->api_service->get_error_msg(0)
+		);
+
+		// Return data
+		$this->response_data =  ($this->response_type == 'json')
+			? $this->array_as_json($data)
+			: $this->array_as_xml($data, $replar);
+
+		echo $this->response_data;
+	}
+
+	/**
+	 * Get incidents within a certain lat,lon bounding box
+	 *
+	 * @param double $sw is the southwest lat,lon of the box
+	 * @param double $ne is the northeast lat,lon of the box
+	 * @param int $c is the categoryid
+	 * @return string XML or JSON string containing the fetched incidents
+	 */
+	private function _get_incidents_by_bounds($sw, $ne, $c)
+	{
 		// Break apart location variables, if necessary
 		$southwest = array();
 		if (isset($sw))
@@ -682,6 +786,8 @@ class Incidents_Api_Object extends Api_Object_Core {
 			$northeast = explode(",",$ne);
 		}
 
+		// To hold the parameters
+		$params = array();
 		if ( count($southwest) == 2 AND count($northeast) == 2 )
 		{
 			$lon_min = (float) $southwest[0];
@@ -689,140 +795,128 @@ class Incidents_Api_Object extends Api_Object_Core {
 			$lat_min = (float) $southwest[1];
 			$lat_max = (float) $northeast[1];
 
-			$query = 'SELECT id FROM '.$this->table_prefix.'location WHERE latitude >='.$lat_min.' AND latitude <='.$lat_max.' AND longitude >='.$lon_min.' AND longitude <='.$lon_max;
-
-			$query = $this->db->query($query);
-
-			foreach ( $query as $items )
-			{
-				$location_ids[] =  $items->id;
-			}
+			// Add parameters
+			array_push($params,
+				'l.latitude >= '.$lat_min,
+				'l.latitude <= '.$lat_max,
+				'l.longitude >= '.$lon_min,
+				'l.longitude <= '.$lon_max
+			);
 		}
 
-		$location_id_in = '1=1';
-		if (count($location_ids) > 0)
+		// Fix for pulling categories using the bounding box
+		// Credits to Antonoio Lettieri http://github.com/alettieri
+		// Check if the specified category id is valid
+		if (Category_Model::is_valid_category($c))
 		{
-			$location_id_in = 'l.id IN ('.implode(',',$location_ids).')';
+			array_push($params, 'c.id = '.$c);
 		}
-		
-		$where = ' WHERE i.incident_active = 1 AND '.$location_id_in.' ';
-		$sortby = " GROUP BY i.id ORDER BY $this->order_field $this->sort";
-        $limit = " LIMIT 0, $this->list_limit";
-		
-		return $this->_get_incidents($where.$sortby, $limit);
-        
-    }
+		return $this->_get_incidents($params);
+	}
 
-    /**
-     * Gets the number of approved reports
-     * 
-     * @param string response_type - XML or JSON
-     *
-     * @return string
-     */
-    public function get_incident_count()
-    {
-    
-        $json_count = array();
-        $ret_json_or_xml = ''; // Will hold the XML/JSON string to return
-        
-        $this->query = 'SELECT COUNT(*) as count FROM '.
-            $this->table_prefix.
-            'incident WHERE incident_active = 1';
+	/**
+	 * Gets the number of approved reports
+	 *
+	 * @param string response_type - XML or JSON
+	 * @return string
+	 */
+	public function get_incident_count()
+	{
+		$json_count = array();
 
-        $items = $this->db->query($this->query);
+		$this->query = 'SELECT COUNT(*) as count FROM '.$this->table_prefix.'incident WHERE incident_active = 1';
 
-        foreach ($items as $item)
-        {
-            $count = $item->count;
-            break;
-        }
+		$items = $this->db->query($this->query);
 
-        if ($this->response_type == 'json')
-        {
-            $json_count[] = array("count" => $count);
-        }
-        else
-        {
-            $json_count['count'] = array("count" => $count);
-            $this->replar[] = 'count';
-        }
+		foreach ($items as $item)
+		{
+			$count = $item->count;
+			break;
+		}
 
-        //create the json array
-        $data = array(
-                "payload" => array(
-                    "domain" => $this->domain,
-                    "count" => $json_count
-                ),
-                "error" => $this->api_service->get_error_msg(0));
+		if ($this->response_type == 'json')
+		{
+			$json_count[] = array("count" => $count);
+		}
+		else
+		{
+			$json_count['count'] = array("count" => $count);
+			$this->replar[] = 'count';
+		}
 
-        if ($this->response_type == 'json') 
-        {
-            $ret_json_or_xml = $this->array_as_json($data);
-        }
-        else
-        {
-            $ret_json_or_xml = $this->array_as_xml($data, $this->replar);
-        }
+		// Create the JSON array
+		$data = array(
+				"payload" => array(
+				"domain" => $this->domain,
+				"count" => $json_count
+			),
+			"error" => $this->api_service->get_error_msg(0)
+		);
 
-        $this->response_data =  $ret_json_or_xml;
-    }
-    
-    /**
-     * Get an approximate geographic midpoint of al approved reports.
-     *
-     * @params string response_type - XML or JSON
-     *
-     * @return string
-     */
-    public function get_geographic_midpoint()
-    {
-        $json_latlon = array();
+		$this->response_data = ($this->response_type == 'json')
+			? $this->array_as_json($data)
+			: $this->array_as_xml($data, $this->replar);
+	}
 
-        $this->query = 'SELECT AVG( latitude ) AS avglat, AVG( longitude ) 
-            AS avglon FROM '.$this->table_prefix.'location WHERE id IN 
-            (SELECT location_id FROM '.$this->table_prefix.'incident WHERE 
-             incident_active = 1)';
-        
-        $items = $this->db->query($this->query);
+	/**
+	 * Get an approximate geographic midpoint of al approved reports.
+	 *
+	 * @param string $response_type - XML or JSON
+	 * @return string
+	 */
+	public function get_geographic_midpoint()
+	{
+		$json_latlon = array();
 
-        foreach ($items as $item)
-        {
-            $latitude = $item->avglat;
-            $longitude = $item->avglon;
-            break;
-        }
+		$this->query = 'SELECT AVG( latitude ) AS avglat, AVG( longitude )
+					AS avglon FROM '.$this->table_prefix.'location WHERE id IN
+					(SELECT location_id FROM '.$this->table_prefix.'incident WHERE
+					incident_active = 1)';
 
-        if ($this->response_type == 'json')
-        {
-            $json_latlon[] = array(
-                "latitude" => $latitude, 
-                "longitude" => $longitude
-            );
-        }
-        else
-        {
-            $json_latlon['geographic_midpoint'] = array(
-                "latitude" => $latitude, 
-                "longitude" => $longitude
-            );
+		$items = $this->db->query($this->query);
 
-            $replar[] = 'geographic_midpoint';
-        }
+		foreach ($items as $item)
+		{
+			$latitude = $item->avglat;
+			$longitude = $item->avglon;
+			break;
+		}
 
-        //create the json array
-        $data = array(
-                "payload" => array(
-                    "domain" => $this->domain,
-                    "geographic_midpoint" => $json_latlon
-                ),
-                "error" => $this->api_service->get_error_msg(0)
-        );
-        
-        // Return data
-        $this->response_data =  ($this->response_type == 'json')
-            ? $this->array_as_json($data)
-            : $this->array_as_xml($data, $replar);
-    }
+		if ($this->response_type == 'json')
+		{
+			$json_latlon[] = array(
+				"latitude" => $latitude,
+				"longitude" => $longitude
+			);
+		}
+		else
+		{
+			$json_latlon['geographic_midpoint'] = array(
+				"latitude" => $latitude,
+				"longitude" => $longitude
+			);
+
+			$replar[] = 'geographic_midpoint';
+		}
+
+		// Create the JSON array
+		$data = array(
+			"payload" => array(
+				"domain" => $this->domain,
+				"geographic_midpoint" => $json_latlon
+			),
+			"error" => $this->api_service->get_error_msg(0)
+		);
+
+		// Return data
+		$this->response_data =  ($this->response_type == 'json')
+			? $this->array_as_json($data)
+			: $this->array_as_xml($data, $replar);
+	}
+
+	protected function check_cordinate_value($cord)
+	{
+		return floatval($cord);
+	}
 
 }

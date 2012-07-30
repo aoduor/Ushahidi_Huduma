@@ -8,6 +8,18 @@
  */
 
 /**
+ * This checks to see if the site is in maintenance mode. Put your site
+ * in maintenance mode by putting a 'maintenance.php' file in the root
+ * directory of your site. (Same directory as this index.php file)
+ *
+ */
+if (file_exists('maintenance.php'))
+{
+	header("Status: 503 Service Temporarily Unavailable");
+	die(file_get_contents('maintenance.php'));
+}
+
+/**
  * Define the website environment status. When this flag is set to TRUE, some
  * module demonstration controllers will result in 404 errors. For more information
  * about this option, read the documentation about deploying Kohana.
@@ -56,6 +68,13 @@ $kohana_themes = 'themes';
 $kohana_plugins = 'plugins';
 
 /**
+ * Media directory.
+ *
+ * This path can be absolute or relative to this file.
+ */
+$kohana_media = 'media';
+
+/**
  * Test to make sure that Kohana is running on PHP 5.2 or newer. Once you are
  * sure that your environment is compatible with Kohana, you can comment this
  * line out. When running an application on a new server, uncomment this line
@@ -101,9 +120,10 @@ define('THEMEPATH', str_replace('\\', '/', realpath($kohana_themes)).'/');
 define('PLUGINPATH', str_replace('\\', '/', realpath($kohana_plugins)).'/');
 define('MODPATH', str_replace('\\', '/', realpath($kohana_modules)).'/');
 define('SYSPATH', str_replace('\\', '/', realpath($kohana_system)).'/');
+define('MEDIAPATH', str_replace('\\', '/', realpath($kohana_media)).'/');
 
 // Clean up
-unset($kohana_application, $kohana_themes, $kohana_plugins, $kohana_modules, $kohana_system);
+unset($kohana_application, $kohana_themes, $kohana_plugins, $kohana_modules, $kohana_system, $kohana_media);
 
 if ( ! IN_PRODUCTION)
 {
@@ -134,6 +154,21 @@ if ( ! IN_PRODUCTION)
 	}
 }
 
+// 
+// Check if the application has been installed
+// -------------------------------------------
+// This has to be done before bootstrapping the Kohana framework
+// 
+// Does the installer directory exist?
+if (file_exists(DOCROOT.DIRECTORY_SEPARATOR.'installer'))
+{
+	if ( ! file_exists(APPPATH.'config'.DIRECTORY_SEPARATOR.'database.php'))
+	{
+		// Redirect to the installer
+		header("Location: ./installer");
+		exit();
+	}
+}
 
 // Initialize.
 require SYSPATH.'core/Bootstrap'.EXT;

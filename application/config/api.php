@@ -15,6 +15,9 @@
      // MHI Enabled
      "mhienabled" => array("System", "get_mhi_enabled"),
      
+     // SSL Enabled
+     "httpsenabled" => array("System", "get_https_enabled"),
+     
      // Map center
      "mapcenter" => array("Private_Func", "map_center"),
      
@@ -43,13 +46,12 @@
  
      // Admin report functions 
      "reports" => "Admin_Reports",
-     "reportaction" => array("Admin_Reports", "report_action"),
                          	
      // Category Action 
-     "categoryaction" => array("Admin_Category","category_action"),
+     "category" => array("Admin_Category","category_action"),
 
      // Comment Action
-     "commentaction" => array( "Comments","comment_action"),
+     "comments" => "Comments",
      
      // Twitter action
      "twitteraction" => array( "Twitter", "twitter_action"),
