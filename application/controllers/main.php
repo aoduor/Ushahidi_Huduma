@@ -135,6 +135,70 @@ class Main_Controller extends Template_Controller {
 			$this->template->header->header_nav->loggedin_user = Auth::instance()->get_user();
 		}
 		$this->template->header->header_nav->site_name = Kohana::config('settings.site_name');
+		
+		
+		// Huduma Hack
+		// Check if a dashboard user is logged in
+		$is_logged_in = Authlite::instance('authlite')->logged_in();
+
+		if ($is_logged_in)
+		{
+			// Get the logged in user object
+			$logged_in_user = Authlite::instance('authlite')->get_user();
+
+			$this->template->header->logged_in_user = $logged_in_user->name;
+
+			$entity_name = "";
+
+			if ( ! empty($logged_in_user->dashboard_role_id) AND $logged_in_user->dashboard_role_id != 0)
+			{
+				// Get the item to be displayed under the name of the currently logged in user
+
+				// Load the privileges for the current role
+				$dashboard_role = $logged_in_user->dashboard_role;
+				
+				$this->can_close_issue = (bool) $dashboard_role->can_close_issue;
+
+				// Role associated with agency
+				if ( ! empty($dashboard_role->static_entity_id))
+				{
+					// Get the name of the static entity
+					$entity_name = Static_Entity_Model::get_entity_name($dashboard_role->static_entity_id);
+				}
+				else
+				{
+					if ( ! empty($dashboard_role->agency_id))
+					{
+						// Get agency name
+						$entity_name = ORM::factory('agency', $dashboard_role->agency_id)->agency_name;
+				
+						// Check for agency access within boundary
+						if ( ! empty($dashboard_role->boundary_id))
+						{
+							// Get the boundary name including its type
+							$boundary = ORM::factory('boundary', $dashboard_role->boundary_id);
+				
+							// Set the entity name
+							$entity_name .= ','.$boundary->boundary_name.' '.$boundary->boundary_type->boundary_type_name;
+						}
+					}
+					elseif ( ! empty($dashboard_role->boundary_id))
+					{
+						// Get the boundary name including its type
+						$boundary = ORM::factory('boundary', $dashboard_role->boundary_id);
+				
+						// Set the entity name
+						$entity_name .= ','.$boundary->boundary_name.' '.$boundary->get_boundary_type_name();
+					}
+				
+				}
+			}
+
+			// Set value for the entity on the UI
+			$this->template->header->static_entity_name = $entity_name;
+		}
+
+		$this->template->header->is_logged_in = $is_logged_in;
 	}
 
 	/**

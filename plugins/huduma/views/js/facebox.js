@@ -80,7 +80,7 @@
   /*
    * Public, $.facebox methods
    */
-
+  var BASE_URL = $("#base_url").text();
   $.extend($.facebox, {
     settings: {
       opacity      : 0.2,
