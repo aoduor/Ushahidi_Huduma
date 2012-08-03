@@ -32,6 +32,7 @@ var endTime = <?php echo $active_endDate ?>;
 // To hold the Ushahidi.Map reference
 var map = null;
 
+<?php @require_once(PLUGINPATH.'huduma/views/js/map_common_js.php'); ?>
 
 /**
  * Toggle Layer Switchers
@@ -382,6 +383,8 @@ $(window).resize(function () {
 	smartColumns();
 });
 
+// Custom event for Huduma overlays
+<?php Event::run('ushahidi_action.huduma_overlay_js'); ?>
 
 <?php if (Kohana::config('settings.checkins')): ?>
 // EK <emmanuel(at)ushahidi.com

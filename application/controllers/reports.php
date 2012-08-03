@@ -365,6 +365,14 @@ class Reports_Controller extends Main_Controller {
 		$default_country = Kohana::config('settings.default_country');
 		$this->template->content->cities = $this->_get_cities($default_country);
 		$this->template->content->multi_country = Kohana::config('settings.multi_country');
+		
+		// Retrieve Counties
+		$counties = Boundary_Model::get_parent_boundaries();
+		$counties[0] = "---".Kohana::lang('ui_huduma.reports_select_county')."---";
+		ksort($counties);
+
+		//Set the counties as content on the view	
+		$this->template->content->counties = $counties;
 
 		$this->template->content->id = $id;
 		$this->template->content->form = $form;
@@ -1005,5 +1013,49 @@ class Reports_Controller extends Main_Controller {
 		$form_fields = customforms::switcheroo($incident_id,$form_id);
         echo json_encode(array("status"=>"success", "response"=>$form_fields));
     }
+
+	/**
+	 * Gets the boundary data for the specified boundary
+	 */
+	public function get_boundary_data()
+	{
+		$this->template = "";
+		$this->auto_render = FALSE;
+		$json_output = "";
+
+		if ($_POST)
+		{
+			// Get the county id
+			$boundary_id = $_POST['boundary_id'];
+
+			// Get the layer file
+			$boundary = new Boundary_Model($boundary_id);
+			$layer_file = $boundary->boundary_layer_file;
+			if ( ! empty($layer_file))
+			{
+				// Set the URL for the layer file
+				$layer_file = url::base().Kohana::config('upload.relative_directory').'/'.$layer_file;
+			}
+
+			// Build output JSON
+			$json_output  = json_encode(array(
+				'success' => TRUE,
+				'data' => Boundary_Model::get_child_boundaries($boundary_id),
+				'layer_name' => $boundary->boundary_name.' '.$boundary->get_boundary_type_name(),
+				'layer_url' => $layer_file,
+				'layer_color' => $boundary->boundary_color
+			));
+		}
+		else
+		{
+			$json_output = json_encode(array(
+				'success' => FALSE
+			));
+		}
+
+		// Flush the
+		header("Content-type: application/json; charset=utf-8");
+		print $json_output;
+	}
 
 }

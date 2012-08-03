@@ -426,6 +426,33 @@
 			    buttonImageOnly: true 
 			});
 			
+			// onChange event handler for the county dropdown
+			$("#county_id").change(function() {
+				// Get the currently selected value
+				var value = $(this).val();
+
+				// Validation
+				if (value == 0) {
+					// Hide the constituency selector
+					$("#constituency_selector").hide('slow');
+				} else if (value != 0) {
+					// Show the constituency selector
+					$("#constituency_selector").show('slow');
+				}
+
+				// Fetch the constituencies
+				fetchBoundaryData({ boundary_id: value}, true);
+			});
+			
+			// onChange event handler for the constituency dropdown
+			$("#constituency_id").change(function(){
+				var boundary_id = $(this).val();
+				if (boundary_id > 0)
+				{
+					fetchBoundaryData({boundary_id : boundary_id}, false);
+				}
+			});
+			
 			// Handles the functionality for changing the size of the map
 			// TODO: make the CSS widths dynamic... instead of hardcoding, grab the width's
 			// from the appropriate parent divs
@@ -626,6 +653,93 @@
 			});
 
 		});
+		
+		// Fetches constituencies via JSON and populates the constituencies dropdown
+		var tempLayers = [];
+		function fetchBoundaryData(data, loadConstituencies)
+		{
+			// Clear the items from the constituencies dropdown
+			if (loadConstituencies)
+			{
+				$("#constituencyId").html("");
+			}
+
+			// Remove all layers in tempLayers from the map and the array itself
+			for (var i =0; i < tempLayers.length; i++)
+			{
+				map.removeLayer(tempLayers[i]);
+				tempLayers.pop();
+			}
+
+			// Fetch the new items
+			$.post(
+				'<?php echo url::site().'reports/get_boundary_data'?>',
+				data,
+				function(response)
+				{
+					if (response.success)
+					{
+						// Check if the constituencies are to be loaded
+						if (loadConstituencies)
+						{
+							var htmlStr = "<option value=\"0\">---<?php echo
+							Kohana::lang('ui_huduma.reports_select_constituency'); ?>---</option>";
+
+							$.each(response.data, function(id, value){
+								htmlStr += "<option value=\""+id+"\">"+value+"</option>";
+							});
+
+							// Populate the dropdown
+							$("#constituency_id").html(htmlStr);
+						}
+
+						if (response.layer_url != null && response.layer_url != "") {
+							// Get the vector layer to use
+							countyLayer = getVectorLayer(response.layer_name, response.layer_color);
+
+							// TODO: Work on this issue of having to load the data twice
+							$.get(response.layer_url, function(data){
+								// Deserialize the JSON string
+								vectors = new OpenLayers.Format.GeoJSON().read(data);
+								drawBoundaryLayer(vectors, countyLayer)
+							});
+						}
+					}
+				},
+				'json'
+			);
+		}
+		
+		/**
+		 * Draws the boundary overlay from a GeoJSON vector input
+		 */
+		function drawBoundaryLayer(vectorData, layerObject)
+		{
+			// Get the the geometry
+			layerFeature = vectors[0];
+
+			// Transform the geometry and render it on the map
+			layerFeature.geometry.transform(proj_4326, proj_900913);
+			layerObject.addFeatures(layerFeature);
+			map.addLayer(layerObject);
+			map.addControl(new OpenLayers.Control.SelectFeature(layerObject, {hover: true} ));
+
+			// Add the layer with the geometry to the list of temporary layers
+			tempLayers.push(countyLayer);
+
+			// Get the center point
+			centroid = layerFeature.geometry.getCentroid();
+
+			// The layer has already undergone transformation, therefore no need to
+			// transform the LonLat object
+			lonlat = new OpenLayers.LonLat(centroid.x, centroid.y);
+			m = new OpenLayers.Marker(lonlat)
+			markers.clearMarkers();
+			markers.addMarker(m);
+
+			// Move the map to the centre of the geometry rendered on the map
+			map.setCenter(lonlat, <?php echo ($default_zoom > 10)? $default_zoom : 10; ?>);
+		}
 		
 		function addFormField(div, field, hidden_id, field_type) {
 			var id = document.getElementById(hidden_id).value;
